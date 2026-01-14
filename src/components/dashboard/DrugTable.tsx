@@ -59,7 +59,7 @@ export function DrugTable({ data }: DrugTableProps) {
                   </TableCell>
                   <TableCell className="font-semibold">
                     <a 
-                      href={`https://dailymed.nlm.nih.gov/dailymed/search.cfm?labeltype=all&query=${encodeURIComponent(drug.brandName)}`}
+                      href={`https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${drug.applicationNo}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:underline hover:text-primary/80 transition-colors"
