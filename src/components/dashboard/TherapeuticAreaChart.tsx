@@ -55,19 +55,19 @@ export function TherapeuticAreaChart({ data }: TherapeuticAreaChartProps) {
         <CardTitle className="text-lg font-semibold">적응증별 분포</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-rows-2 gap-4">
+        <div className="grid grid-rows-2 gap-6">
           {/* 전체 차트 */}
           <div>
-            <p className="text-sm text-muted-foreground text-center mb-1">전체 ({data.reduce((acc, d) => acc + d.value, 0)}건)</p>
-            <div className="h-[120px]">
+            <p className="text-sm font-medium text-muted-foreground text-center mb-2">전체 ({data.reduce((acc, d) => acc + d.value, 0)}건)</p>
+            <div className="h-[160px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={data}
                     cx="50%"
                     cy="50%"
-                    innerRadius={25}
-                    outerRadius={45}
+                    innerRadius={35}
+                    outerRadius={60}
                     paddingAngle={3}
                     dataKey="value"
                     label={({ name, value }) => `${name}(${value})`}
@@ -93,8 +93,8 @@ export function TherapeuticAreaChart({ data }: TherapeuticAreaChartProps) {
 
           {/* 항암제 차트 */}
           <div>
-            <p className="text-sm text-muted-foreground text-center mb-1">항암제 ({oncologyData.reduce((acc, d) => acc + d.value, 0)}건)</p>
-            <div className="h-[120px]">
+            <p className="text-sm font-medium text-muted-foreground text-center mb-2">항암제 ({oncologyData.reduce((acc, d) => acc + d.value, 0)}건)</p>
+            <div className="h-[160px]">
               {oncologyData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -102,8 +102,8 @@ export function TherapeuticAreaChart({ data }: TherapeuticAreaChartProps) {
                       data={oncologyData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={25}
-                      outerRadius={45}
+                      innerRadius={35}
+                      outerRadius={60}
                       paddingAngle={3}
                       dataKey="value"
                       label={({ name, value }) => `${name}(${value})`}
