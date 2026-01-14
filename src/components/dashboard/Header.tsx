@@ -1,6 +1,13 @@
 import { Calendar, Database, FileText } from "lucide-react";
+import { CsvUpload } from "./CsvUpload";
+import { DrugApproval } from "@/data/fdaData";
 
-export function Header() {
+interface HeaderProps {
+  onDataUpdate: (data: DrugApproval[]) => void;
+  dataCount: number;
+}
+
+export function Header({ onDataUpdate, dataCount }: HeaderProps) {
   return (
     <header className="mb-8">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
@@ -10,23 +17,26 @@ export function Header() {
               <FileText className="h-6 w-6 text-primary" />
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-              2025년 11월 FDA 전문의약품 승인 현황
+              US FDA 승인 전문의약품
             </h1>
           </div>
           <p className="text-muted-foreground">
-            미국 FDA에서 승인한 전문의약품 승인 데이터 대시보드
+            미국 FDA 전문의약품 승인 데이터 대시보드
           </p>
         </div>
         
-        <div className="flex items-center gap-6 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>대상 월: <strong className="text-foreground">2025-11</strong></span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Database className="h-4 w-4" />
+              <span>데이터: <strong className="text-foreground">{dataCount}건</strong></span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span>수집일: <strong className="text-foreground">2026-01-14</strong></span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Database className="h-4 w-4" />
-            <span>수집일: <strong className="text-foreground">2026-01-14</strong></span>
-          </div>
+          <CsvUpload onDataUpdate={onDataUpdate} />
         </div>
       </div>
       

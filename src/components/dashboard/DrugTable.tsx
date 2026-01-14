@@ -8,13 +8,34 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fdaApprovals } from "@/data/fdaData";
+import { DrugApproval } from "@/data/fdaData";
 
-export function DrugTable() {
+interface DrugTableProps {
+  data: DrugApproval[];
+}
+
+export function DrugTable({ data }: DrugTableProps) {
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">승인 약물 상세 목록</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">
+            필터 조건에 맞는 데이터가 없습니다
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">승인 약물 상세 목록</CardTitle>
+        <CardTitle className="text-lg font-semibold">
+          승인 약물 상세 목록 ({data.length}건)
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -31,7 +52,7 @@ export function DrugTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {fdaApprovals.map((drug) => (
+              {data.map((drug) => (
                 <TableRow key={drug.applicationNo} className="hover:bg-muted/50 transition-colors">
                   <TableCell className="font-medium text-sm">
                     {drug.approvalDate.split("-").slice(1).join("/")}
@@ -57,7 +78,7 @@ export function DrugTable() {
                       variant={drug.isOncology ? "default" : "secondary"}
                       className={drug.isOncology ? "bg-chart-oncology hover:bg-chart-oncology/80" : ""}
                     >
-                      {drug.therapeuticArea.split(" - ")[1]}
+                      {drug.therapeuticArea.split(" - ")[1] || drug.therapeuticArea}
                     </Badge>
                   </TableCell>
                   <TableCell>
