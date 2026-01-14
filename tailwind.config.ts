@@ -57,6 +57,15 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        chart: {
+          oncology: "hsl(var(--chart-oncology))",
+          biosimilar: "hsl(var(--chart-biosimilar))",
+          novel: "hsl(var(--chart-novel))",
+          orphan: "hsl(var(--chart-orphan))",
+          neurology: "hsl(var(--chart-neurology))",
+          nephrology: "hsl(var(--chart-nephrology))",
+          hematology: "hsl(var(--chart-hematology))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

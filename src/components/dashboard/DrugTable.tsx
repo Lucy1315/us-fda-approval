@@ -1,0 +1,95 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { fdaApprovals } from "@/data/fdaData";
+
+export function DrugTable() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold">승인 약물 상세 목록</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[100px]">승인일</TableHead>
+                <TableHead className="w-[130px]">제품명</TableHead>
+                <TableHead className="w-[150px]">주성분</TableHead>
+                <TableHead className="w-[140px]">제약사</TableHead>
+                <TableHead className="w-[130px]">치료영역</TableHead>
+                <TableHead className="w-[150px]">지정</TableHead>
+                <TableHead className="w-[80px]">승인유형</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {fdaApprovals.map((drug) => (
+                <TableRow key={drug.applicationNo} className="hover:bg-muted/50 transition-colors">
+                  <TableCell className="font-medium text-sm">
+                    {drug.approvalDate.split("-").slice(1).join("/")}
+                  </TableCell>
+                  <TableCell className="font-semibold text-primary">
+                    {drug.brandName}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {drug.activeIngredient}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {drug.sponsor.length > 20 ? drug.sponsor.slice(0, 20) + "..." : drug.sponsor}
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={drug.isOncology ? "default" : "secondary"}
+                      className={drug.isOncology ? "bg-chart-oncology hover:bg-chart-oncology/80" : ""}
+                    >
+                      {drug.therapeuticArea.split(" - ")[1]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {drug.isNovelDrug && (
+                        <Badge variant="outline" className="text-xs border-primary text-primary">
+                          신약
+                        </Badge>
+                      )}
+                      {drug.isOrphanDrug && (
+                        <Badge variant="outline" className="text-xs border-chart-orphan text-chart-orphan">
+                          희귀
+                        </Badge>
+                      )}
+                      {drug.isBiosimilar && (
+                        <Badge variant="outline" className="text-xs border-secondary text-secondary">
+                          바이오시밀러
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant="outline" 
+                      className={
+                        drug.approvalType === "신속승인" 
+                          ? "border-secondary bg-secondary/10 text-secondary" 
+                          : "border-primary bg-primary/10 text-primary"
+                      }
+                    >
+                      {drug.approvalType}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
