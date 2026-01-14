@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { Pill, FlaskConical, Star, Microscope, Syringe, Activity } from "lucide-react";
 import { Header } from "@/components/dashboard/Header";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -6,54 +7,128 @@ import { ApprovalTypeChart } from "@/components/dashboard/ApprovalTypeChart";
 import { DesignationProgress } from "@/components/dashboard/DesignationProgress";
 import { DrugTable } from "@/components/dashboard/DrugTable";
 import { Highlights } from "@/components/dashboard/Highlights";
-import { summaryStats } from "@/data/fdaData";
+import { Filters, FilterState, applyFilters } from "@/components/dashboard/Filters";
+import { fdaApprovals, DrugApproval } from "@/data/fdaData";
 
 const Index = () => {
+  const [data, setData] = useState<DrugApproval[]>(fdaApprovals);
+  const [filters, setFilters] = useState<FilterState>({
+    dateRange: "all",
+    applicationType: "all",
+    sponsor: "all",
+    therapeuticArea: "all",
+    isOncology: "all",
+    isBiosimilar: "all",
+    isNovelDrug: "all",
+    isOrphanDrug: "all",
+  });
+
+  const filteredData = useMemo(() => applyFilters(data, filters), [data, filters]);
+
+  const stats = useMemo(() => {
+    const total = filteredData.length;
+    const oncology = filteredData.filter((d) => d.isOncology).length;
+    const nonOncology = total - oncology;
+    const biosimilar = filteredData.filter((d) => d.isBiosimilar).length;
+    const novelDrug = filteredData.filter((d) => d.isNovelDrug).length;
+    const novelOncology = filteredData.filter((d) => d.isNovelDrug && d.isOncology).length;
+    const novelNonOncology = novelDrug - novelOncology;
+    const orphanDrug = filteredData.filter((d) => d.isOrphanDrug).length;
+
+    return { total, oncology, nonOncology, biosimilar, novelDrug, novelOncology, novelNonOncology, orphanDrug };
+  }, [filteredData]);
+
+  const therapeuticAreaData = useMemo(() => {
+    const areaMap = new Map<string, { name: string; value: number; category: string }>();
+    filteredData.forEach((drug) => {
+      const parts = drug.therapeuticArea.split(" - ");
+      const category = parts[0] || "";
+      const name = parts[1] || drug.therapeuticArea;
+      const key = name;
+      if (areaMap.has(key)) {
+        areaMap.get(key)!.value++;
+      } else {
+        areaMap.set(key, { name, value: 1, category });
+      }
+    });
+    return Array.from(areaMap.values());
+  }, [filteredData]);
+
+  const approvalTypeData = useMemo(() => {
+    const typeMap = new Map<string, number>();
+    filteredData.forEach((drug) => {
+      const type = drug.approvalType || "기타";
+      typeMap.set(type, (typeMap.get(type) || 0) + 1);
+    });
+    return Array.from(typeMap.entries()).map(([name, value]) => ({ name, value }));
+  }, [filteredData]);
+
+  const drugCategoryData = useMemo(() => [
+    { name: "항암제", value: stats.oncology },
+    { name: "비항암제", value: stats.nonOncology },
+  ], [stats]);
+
+  const specialDesignations = useMemo(() => {
+    const total = stats.total || 1;
+    return [
+      { name: "희귀의약품", value: stats.orphanDrug, percentage: Math.round((stats.orphanDrug / total) * 100) },
+      { name: "신약", value: stats.novelDrug, percentage: Math.round((stats.novelDrug / total) * 100) },
+      { name: "바이오시밀러", value: stats.biosimilar, percentage: Math.round((stats.biosimilar / total) * 100) },
+    ];
+  }, [stats]);
+
+  const handleDataUpdate = (newData: DrugApproval[]) => {
+    setData(newData);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <Header />
+        <Header onDataUpdate={handleDataUpdate} dataCount={data.length} />
+        
+        {/* Filters */}
+        <Filters data={data} filters={filters} onFilterChange={setFilters} />
         
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
           <StatCard
             title="전체 승인"
-            value={summaryStats.total}
-            subtitle="2025년 11월"
+            value={stats.total}
+            subtitle={`필터 적용: ${filteredData.length === data.length ? "없음" : `${data.length}건 중`}`}
             icon={Pill}
             variant="primary"
           />
           <StatCard
             title="항암제"
-            value={summaryStats.oncology}
-            subtitle={`비항암제: ${summaryStats.nonOncology}건`}
+            value={stats.oncology}
+            subtitle={`비항암제: ${stats.nonOncology}건`}
             icon={FlaskConical}
             variant="accent"
           />
           <StatCard
             title="신약 (Novel)"
-            value={summaryStats.novelDrug}
-            subtitle={`항암제 ${summaryStats.novelOncology} / 비항암제 ${summaryStats.novelNonOncology}`}
+            value={stats.novelDrug}
+            subtitle={`항암제 ${stats.novelOncology} / 비항암제 ${stats.novelNonOncology}`}
             icon={Star}
             variant="secondary"
           />
           <StatCard
             title="희귀의약품"
-            value={summaryStats.orphanDrug}
+            value={stats.orphanDrug}
             subtitle="Orphan Drug"
             icon={Microscope}
             variant="muted"
           />
           <StatCard
             title="바이오시밀러"
-            value={summaryStats.biosimilar}
+            value={stats.biosimilar}
             subtitle="Biosimilar"
             icon={Syringe}
             variant="secondary"
           />
           <StatCard
             title="BLA 신청"
-            value="100%"
+            value={stats.total > 0 ? "100%" : "0%"}
             subtitle="모든 제품"
             icon={Activity}
             variant="primary"
@@ -62,18 +137,18 @@ const Index = () => {
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <TherapeuticAreaChart />
-          <ApprovalTypeChart />
-          <Highlights />
+          <TherapeuticAreaChart data={therapeuticAreaData} />
+          <ApprovalTypeChart approvalTypeData={approvalTypeData} drugCategoryData={drugCategoryData} />
+          <Highlights data={filteredData} />
         </div>
 
         {/* Progress Section */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
           <div className="lg:col-span-1">
-            <DesignationProgress />
+            <DesignationProgress data={specialDesignations} />
           </div>
           <div className="lg:col-span-3">
-            <DrugTable />
+            <DrugTable data={filteredData} />
           </div>
         </div>
 

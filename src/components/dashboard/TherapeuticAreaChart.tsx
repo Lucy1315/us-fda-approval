@@ -1,16 +1,42 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { therapeuticAreaData } from "@/data/fdaData";
+
+interface TherapeuticAreaData {
+  name: string;
+  value: number;
+  category: string;
+}
+
+interface TherapeuticAreaChartProps {
+  data: TherapeuticAreaData[];
+}
 
 const COLORS = [
-  "hsl(25, 95%, 55%)",    // 폐암 - orange
-  "hsl(35, 90%, 50%)",    // 아밀로이드증 - amber
-  "hsl(260, 60%, 55%)",   // 유전자치료 - purple
-  "hsl(340, 65%, 55%)",   // IgA 신병증 - pink
-  "hsl(168, 70%, 42%)",   // 중성구감소증 - teal
+  "hsl(45, 90%, 65%)",
+  "hsl(85, 55%, 55%)",
+  "hsl(262, 65%, 65%)",
+  "hsl(320, 60%, 65%)",
+  "hsl(200, 70%, 60%)",
+  "hsl(15, 85%, 65%)",
+  "hsl(175, 50%, 55%)",
 ];
 
-export function TherapeuticAreaChart() {
+export function TherapeuticAreaChart({ data }: TherapeuticAreaChartProps) {
+  if (data.length === 0) {
+    return (
+      <Card className="col-span-1">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">적응증별 분포</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[280px] flex items-center justify-center text-muted-foreground">
+            데이터가 없습니다
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="col-span-1">
       <CardHeader>
@@ -21,7 +47,7 @@ export function TherapeuticAreaChart() {
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={therapeuticAreaData}
+                data={data}
                 cx="50%"
                 cy="50%"
                 innerRadius={50}
@@ -31,7 +57,7 @@ export function TherapeuticAreaChart() {
                 label={({ name, value }) => `${name} (${value})`}
                 labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
               >
-                {therapeuticAreaData.map((_, index) => (
+                {data.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
