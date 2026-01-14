@@ -1,5 +1,5 @@
 import { Calendar, Database, FileText } from "lucide-react";
-import { CsvUpload } from "./CsvUpload";
+import { ExcelUpload } from "./ExcelUpload";
 import { DrugApproval } from "@/data/fdaData";
 
 interface HeaderProps {
@@ -36,7 +36,7 @@ export function Header({ onDataUpdate, dataCount }: HeaderProps) {
               <span>수집일: <strong className="text-foreground">2026-01-14</strong></span>
             </div>
           </div>
-          <CsvUpload onDataUpdate={onDataUpdate} />
+          <ExcelUpload onDataUpdate={onDataUpdate} />
         </div>
       </div>
       

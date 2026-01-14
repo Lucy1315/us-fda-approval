@@ -1,0 +1,194 @@
+import { useState, useRef } from "react";
+import { Upload, FileSpreadsheet, X, Check, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { DrugApproval } from "@/data/fdaData";
+import { useToast } from "@/hooks/use-toast";
+import * as XLSX from "xlsx";
+
+interface ExcelUploadProps {
+  onDataUpdate: (data: DrugApproval[]) => void;
+}
+
+export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const parseExcel = (buffer: ArrayBuffer): DrugApproval[] => {
+    const workbook = XLSX.read(buffer, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: "" });
+
+    return jsonData.map((row) => {
+      const getValue = (keys: string[]): string => {
+        for (const key of keys) {
+          const value = row[key] || row[key.toLowerCase()] || row[key.toUpperCase()];
+          if (value !== undefined && value !== null && value !== "") {
+            return String(value).trim();
+          }
+        }
+        return "";
+      };
+
+      const getBoolValue = (keys: string[]): boolean => {
+        const value = getValue(keys);
+        return value.toLowerCase() === "true" || value === "Y" || value === "y" || value === "1";
+      };
+
+      return {
+        approvalMonth: getValue(["approval_month", "승인월", "ApprovalMonth"]),
+        approvalDate: getValue(["approval_date", "승인일", "ApprovalDate"]),
+        ndaBlaNumber: getValue(["nda_bla_number", "신청번호", "NDA_BLA_Number"]),
+        applicationNo: getValue(["application_no", "허가번호", "ApplicationNo"]),
+        applicationType: getValue(["application_type", "신청유형", "ApplicationType"]),
+        brandName: getValue(["brand_name", "제품명", "BrandName"]),
+        activeIngredient: getValue(["active_ingredient", "주성분", "ActiveIngredient"]),
+        sponsor: getValue(["sponsor", "제약사", "Sponsor"]),
+        indicationFull: getValue(["indication_full", "적응증", "IndicationFull"]),
+        therapeuticArea: getValue(["therapeutic_area", "치료영역", "TherapeuticArea"]),
+        isOncology: getBoolValue(["is_oncology", "항암제", "IsOncology"]),
+        isBiosimilar: getBoolValue(["is_biosimilar", "바이오시밀러", "IsBiosimilar"]),
+        isNovelDrug: getBoolValue(["is_novel_drug", "신약", "IsNovelDrug"]),
+        isOrphanDrug: getBoolValue(["is_orphan_drug", "희귀의약품", "IsOrphanDrug"]),
+        approvalType: getValue(["approval_type", "승인유형", "ApprovalType"]),
+        notes: getValue(["notes", "비고", "Notes"]),
+        fdaUrl: getValue(["fda_url", "fdaUrl", "FDA_URL"]),
+      };
+    }).filter(drug => drug.brandName && drug.approvalDate);
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFileName(file.name);
+    setIsProcessing(true);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const parsedData = parseExcel(buffer);
+
+      if (parsedData.length === 0) {
+        toast({
+          title: "파싱 오류",
+          description: "엑셀 파일에서 유효한 데이터를 찾을 수 없습니다.",
+          variant: "destructive",
+        });
+        setFileName(null);
+        return;
+      }
+
+      onDataUpdate(parsedData);
+      toast({
+        title: "업로드 완료",
+        description: `${parsedData.length}건의 데이터가 성공적으로 로드되었습니다.`,
+      });
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Excel parse error:", error);
+      toast({
+        title: "파일 읽기 오류",
+        description: "엑셀 파일을 읽는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleClear = () => {
+    setFileName(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2">
+          <Upload className="h-4 w-4" />
+          엑셀 업로드
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5 text-primary" />
+            엑셀 데이터 업로드
+          </DialogTitle>
+          <DialogDescription>
+            FDA 승인 데이터가 포함된 엑셀 파일(.xlsx, .xls)을 업로드하세요. 
+            대시보드가 자동으로 업데이트됩니다.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileChange}
+              className="hidden"
+              id="excel-upload"
+            />
+            <label 
+              htmlFor="excel-upload" 
+              className="cursor-pointer flex flex-col items-center gap-2"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                  <span className="text-sm text-muted-foreground">처리 중...</span>
+                </>
+              ) : fileName ? (
+                <>
+                  <Check className="h-10 w-10 text-green-500" />
+                  <span className="text-sm font-medium">{fileName}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={(e) => { e.preventDefault(); handleClear(); }}
+                    className="gap-1"
+                  >
+                    <X className="h-3 w-3" />
+                    취소
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Upload className="h-10 w-10 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    클릭하여 엑셀 파일 선택
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    .xlsx, .xls 지원
+                  </span>
+                </>
+              )}
+            </label>
+          </div>
+
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p className="font-medium">필수 컬럼:</p>
+            <p>brand_name(제품명), approval_date(승인일), therapeutic_area(치료영역), sponsor(제약사)</p>
+            <p className="font-medium mt-2">선택 컬럼:</p>
+            <p>is_oncology(항암제), is_biosimilar(바이오시밀러), is_novel_drug(신약), is_orphan_drug(희귀의약품), approval_type(승인유형), notes(비고)</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
