@@ -8,92 +8,92 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 210 25% 97%;
-    --foreground: 215 30% 15%;
+    --background: 0 0% 98%;
+    --foreground: 250 25% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 30% 15%;
+    --card-foreground: 250 25% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 30% 15%;
+    --popover-foreground: 250 25% 15%;
 
-    --primary: 200 85% 45%;
+    --primary: 262 83% 58%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 168 70% 42%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 262 30% 95%;
+    --secondary-foreground: 262 83% 58%;
 
-    --muted: 210 20% 94%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 250 15% 95%;
+    --muted-foreground: 250 10% 50%;
 
-    --accent: 35 95% 55%;
+    --accent: 262 83% 58%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 20% 88%;
-    --input: 210 20% 88%;
-    --ring: 200 85% 45%;
+    --border: 250 15% 90%;
+    --input: 250 15% 90%;
+    --ring: 262 83% 58%;
 
     --radius: 0.75rem;
 
-    /* Custom colors for charts */
-    --chart-oncology: 25 95% 55%;
-    --chart-biosimilar: 168 70% 42%;
-    --chart-novel: 200 85% 45%;
-    --chart-orphan: 280 60% 55%;
-    --chart-neurology: 260 60% 55%;
-    --chart-nephrology: 340 65% 55%;
-    --chart-hematology: 45 90% 50%;
+    /* Custom colors for charts - pastel palette */
+    --chart-oncology: 45 90% 65%;
+    --chart-biosimilar: 85 55% 55%;
+    --chart-novel: 262 65% 65%;
+    --chart-orphan: 320 60% 65%;
+    --chart-neurology: 200 70% 60%;
+    --chart-nephrology: 15 85% 65%;
+    --chart-hematology: 175 50% 55%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 250 25% 30%;
+    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 262 30% 95%;
+    --sidebar-accent-foreground: 262 83% 58%;
+    --sidebar-border: 250 15% 92%;
+    --sidebar-ring: 262 83% 58%;
   }
 
   .dark {
-    --background: 215 30% 8%;
-    --foreground: 210 25% 95%;
+    --background: 250 25% 8%;
+    --foreground: 250 15% 95%;
 
-    --card: 215 25% 12%;
-    --card-foreground: 210 25% 95%;
+    --card: 250 25% 12%;
+    --card-foreground: 250 15% 95%;
 
-    --popover: 215 25% 12%;
-    --popover-foreground: 210 25% 95%;
+    --popover: 250 25% 12%;
+    --popover-foreground: 250 15% 95%;
 
-    --primary: 200 85% 50%;
+    --primary: 262 83% 65%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 168 70% 45%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 262 30% 20%;
+    --secondary-foreground: 262 83% 75%;
 
-    --muted: 215 25% 18%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 250 20% 18%;
+    --muted-foreground: 250 10% 60%;
 
-    --accent: 35 95% 55%;
+    --accent: 262 83% 65%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 25% 20%;
-    --input: 215 25% 20%;
-    --ring: 200 85% 50%;
+    --border: 250 20% 20%;
+    --input: 250 20% 20%;
+    --ring: 262 83% 65%;
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 250 25% 10%;
+    --sidebar-foreground: 250 15% 90%;
+    --sidebar-primary: 262 83% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 262 25% 18%;
+    --sidebar-accent-foreground: 262 83% 75%;
+    --sidebar-border: 250 20% 18%;
+    --sidebar-ring: 262 83% 65%;
   }
 }
 
