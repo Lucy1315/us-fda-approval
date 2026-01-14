@@ -1,5 +1,6 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo } from "react";
 
 interface TherapeuticAreaData {
   name: string;
@@ -21,7 +22,18 @@ const COLORS = [
   "hsl(175, 50%, 55%)",
 ];
 
+const ONCOLOGY_COLORS = [
+  "hsl(45, 90%, 65%)",
+  "hsl(15, 85%, 65%)",
+  "hsl(320, 60%, 65%)",
+  "hsl(35, 85%, 60%)",
+];
+
 export function TherapeuticAreaChart({ data }: TherapeuticAreaChartProps) {
+  const oncologyData = useMemo(() => {
+    return data.filter(d => d.category === "항암제");
+  }, [data]);
+
   if (data.length === 0) {
     return (
       <Card className="col-span-1">
@@ -43,35 +55,88 @@ export function TherapeuticAreaChart({ data }: TherapeuticAreaChartProps) {
         <CardTitle className="text-lg font-semibold">적응증별 분포</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={90}
-                paddingAngle={3}
-                dataKey="value"
-                label={({ name, value }) => `${name} (${value})`}
-                labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
-              >
-                {data.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "8px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                }}
-                formatter={(value: number, name: string) => [`${value}건`, name]}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="grid grid-cols-2 gap-4">
+          {/* 전체 차트 */}
+          <div>
+            <p className="text-sm text-muted-foreground text-center mb-2">전체</p>
+            <div className="h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={35}
+                    outerRadius={65}
+                    paddingAngle={3}
+                    dataKey="value"
+                    label={({ name, value }) => `${name}(${value})`}
+                    labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
+                  >
+                    {data.map((_, index) => (
+                      <Cell key={`cell-all-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                    formatter={(value: number, name: string) => [`${value}건`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="text-xs text-center text-muted-foreground mt-1">
+              총 {data.reduce((acc, d) => acc + d.value, 0)}건
+            </p>
+          </div>
+
+          {/* 항암제 차트 */}
+          <div>
+            <p className="text-sm text-muted-foreground text-center mb-2">항암제</p>
+            <div className="h-[220px]">
+              {oncologyData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={oncologyData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={35}
+                      outerRadius={65}
+                      paddingAngle={3}
+                      dataKey="value"
+                      label={({ name, value }) => `${name}(${value})`}
+                      labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
+                    >
+                      {oncologyData.map((_, index) => (
+                        <Cell key={`cell-onc-${index}`} fill={ONCOLOGY_COLORS[index % ONCOLOGY_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      }}
+                      formatter={(value: number, name: string) => [`${value}건`, name]}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                  항암제 데이터 없음
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-center text-muted-foreground mt-1">
+              총 {oncologyData.reduce((acc, d) => acc + d.value, 0)}건
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>
