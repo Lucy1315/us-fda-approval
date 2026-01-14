@@ -33,7 +33,7 @@ const Index = () => {
           <StatCard
             title="신약 (Novel)"
             value={summaryStats.novelDrug}
-            subtitle="최초 승인 의약품"
+            subtitle={`항암제 ${summaryStats.novelOncology} / 비항암제 ${summaryStats.novelNonOncology}`}
             icon={Star}
             variant="secondary"
           />
