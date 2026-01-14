@@ -116,9 +116,8 @@ export function Filters({ data, filters, onFilterChange }: FiltersProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">전체</SelectItem>
-              {uniqueValues.applicationTypes.map((type) => (
-                <SelectItem key={type} value={type}>{type}</SelectItem>
-              ))}
+              <SelectItem value="NDA">NDA</SelectItem>
+              <SelectItem value="BLA">BLA</SelectItem>
             </SelectContent>
           </Select>
         </div>
