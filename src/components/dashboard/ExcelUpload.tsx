@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { DrugApproval } from "@/data/fdaData";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +22,7 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [parsedData, setParsedData] = useState<DrugApproval[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -74,12 +76,13 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
 
     setFileName(file.name);
     setIsProcessing(true);
+    setParsedData(null);
 
     try {
       const buffer = await file.arrayBuffer();
-      const parsedData = parseExcel(buffer);
+      const data = parseExcel(buffer);
 
-      if (parsedData.length === 0) {
+      if (data.length === 0) {
         toast({
           title: "파싱 오류",
           description: "엑셀 파일에서 유효한 데이터를 찾을 수 없습니다.",
@@ -89,12 +92,11 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
         return;
       }
 
-      onDataUpdate(parsedData);
+      setParsedData(data);
       toast({
-        title: "업로드 완료",
-        description: `${parsedData.length}건의 데이터가 성공적으로 로드되었습니다.`,
+        title: "파일 로드 완료",
+        description: `${data.length}건의 데이터를 찾았습니다. '적용' 버튼을 눌러 대시보드에 반영하세요.`,
       });
-      setIsOpen(false);
     } catch (error) {
       console.error("Excel parse error:", error);
       toast({
@@ -102,20 +104,45 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
         description: "엑셀 파일을 읽는 중 오류가 발생했습니다.",
         variant: "destructive",
       });
+      setFileName(null);
     } finally {
       setIsProcessing(false);
     }
   };
 
+  const handleApply = () => {
+    if (parsedData && parsedData.length > 0) {
+      onDataUpdate(parsedData);
+      toast({
+        title: "적용 완료",
+        description: `${parsedData.length}건의 데이터가 대시보드에 반영되었습니다.`,
+      });
+      setIsOpen(false);
+      setFileName(null);
+      setParsedData(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   const handleClear = () => {
     setFileName(null);
+    setParsedData(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      handleClear();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Upload className="h-4 w-4" />
@@ -129,8 +156,7 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
             엑셀 데이터 업로드
           </DialogTitle>
           <DialogDescription>
-            FDA 승인 데이터가 포함된 엑셀 파일(.xlsx, .xls)을 업로드하세요. 
-            대시보드가 자동으로 업데이트됩니다.
+            FDA 승인 데이터가 포함된 엑셀 파일(.xlsx, .xls)을 업로드하세요.
           </DialogDescription>
         </DialogHeader>
 
@@ -153,10 +179,13 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
                   <Loader2 className="h-10 w-10 text-primary animate-spin" />
                   <span className="text-sm text-muted-foreground">처리 중...</span>
                 </>
-              ) : fileName ? (
+              ) : parsedData ? (
                 <>
                   <Check className="h-10 w-10 text-green-500" />
                   <span className="text-sm font-medium">{fileName}</span>
+                  <span className="text-xs text-primary font-medium">
+                    {parsedData.length}건 데이터 준비됨
+                  </span>
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -164,7 +193,7 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
                     className="gap-1"
                   >
                     <X className="h-3 w-3" />
-                    취소
+                    다른 파일 선택
                   </Button>
                 </>
               ) : (
@@ -188,6 +217,20 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
             <p>is_oncology(항암제), is_biosimilar(바이오시밀러), is_novel_drug(신약), is_orphan_drug(희귀의약품), approval_type(승인유형), notes(비고)</p>
           </div>
         </div>
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+            취소
+          </Button>
+          <Button 
+            onClick={handleApply} 
+            disabled={!parsedData || parsedData.length === 0}
+            className="gap-2"
+          >
+            <Check className="h-4 w-4" />
+            적용
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
