@@ -25,7 +25,7 @@ export function DrugTable() {
                 <TableHead className="w-[130px]">제품명</TableHead>
                 <TableHead className="w-[150px]">주성분</TableHead>
                 <TableHead className="w-[140px]">제약사</TableHead>
-                <TableHead className="w-[130px]">치료영역</TableHead>
+                <TableHead className="w-[130px]">적응증</TableHead>
                 <TableHead className="w-[150px]">지정</TableHead>
                 <TableHead className="w-[80px]">승인유형</TableHead>
               </TableRow>
@@ -36,8 +36,15 @@ export function DrugTable() {
                   <TableCell className="font-medium text-sm">
                     {drug.approvalDate.split("-").slice(1).join("/")}
                   </TableCell>
-                  <TableCell className="font-semibold text-primary">
-                    {drug.brandName}
+                  <TableCell className="font-semibold">
+                    <a 
+                      href={`https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${drug.applicationNo}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline hover:text-primary/80 transition-colors"
+                    >
+                      {drug.brandName}
+                    </a>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {drug.activeIngredient}

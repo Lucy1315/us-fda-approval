@@ -14,7 +14,7 @@ export function TherapeuticAreaChart() {
   return (
     <Card className="col-span-1">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">치료영역별 분포</CardTitle>
+        <CardTitle className="text-lg font-semibold">적응증별 분포</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[280px]">
