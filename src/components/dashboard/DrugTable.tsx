@@ -14,6 +14,24 @@ interface DrugTableProps {
   data: DrugApproval[];
 }
 
+function getFdaProductUrl(drug: DrugApproval): string {
+  const name = (drug.brandName || "").trim().toUpperCase();
+
+  // Explicit overrides requested
+  if (name === "ITVISMA") {
+    return "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/itvisma";
+  }
+  if (name === "IMDELLTRA" || name === "VOYXACT" || name === "ARMLUPEG") {
+    return "https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=BasicSearch.process";
+  }
+
+  // Data-driven override (if present)
+  if (drug.fdaUrl) return drug.fdaUrl;
+
+  // Fallback
+  return `https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${drug.applicationNo}`;
+}
+
 export function DrugTable({ data }: DrugTableProps) {
   if (data.length === 0) {
     return (
@@ -59,7 +77,7 @@ export function DrugTable({ data }: DrugTableProps) {
                   </TableCell>
                   <TableCell className="font-semibold">
                     <a 
-                      href={drug.fdaUrl || `https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${drug.applicationNo}`}
+                      href={getFdaProductUrl(drug)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:underline hover:text-primary/80 transition-colors"
