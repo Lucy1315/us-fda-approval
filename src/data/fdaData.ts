@@ -15,6 +15,7 @@ export interface DrugApproval {
   isOrphanDrug: boolean;
   approvalType: string;
   notes: string;
+  fdaUrl?: string;
 }
 
 export const fdaApprovals: DrugApproval[] = [
@@ -35,6 +36,7 @@ export const fdaApprovals: DrugApproval[] = [
     isOrphanDrug: true,
     approvalType: "정규승인",
     notes: "2024년 신속승인에서 정규승인으로 전환. CD3/DLL3 타겟 이중특이 T세포 결합체",
+    fdaUrl: "https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=BasicSearch.process",
   },
   {
     approvalMonth: "2025-11",
@@ -89,6 +91,7 @@ export const fdaApprovals: DrugApproval[] = [
     isOrphanDrug: true,
     approvalType: "정규승인",
     notes: "성인 및 고연령 소아 SMA 최초 유전자 치료. AAV 벡터 기반. 척수강 내 투여",
+    fdaUrl: "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/itvisma",
   },
   {
     approvalMonth: "2025-11",
@@ -107,6 +110,7 @@ export const fdaApprovals: DrugApproval[] = [
     isOrphanDrug: true,
     approvalType: "신속승인",
     notes: "IgA 신병증 최초 APRIL 차단제",
+    fdaUrl: "https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=BasicSearch.process",
   },
   {
     approvalMonth: "2025-11",
@@ -125,6 +129,7 @@ export const fdaApprovals: DrugApproval[] = [
     isOrphanDrug: false,
     approvalType: "정규승인",
     notes: "Neulasta (pegfilgrastim) 바이오시밀러. PEG화 과립구 집락자극인자",
+    fdaUrl: "https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=BasicSearch.process",
   },
 ];
 
