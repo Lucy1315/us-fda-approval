@@ -148,8 +148,8 @@ export const fdaApprovals: DrugApproval[] = [
   {
     approvalMonth: "2025-12",
     approvalDate: "2025-12-12",
-    ndaBlaNumber: "NDA 217500",
-    applicationNo: "217500",
+    ndaBlaNumber: "NDA 216793",
+    applicationNo: "216793",
     applicationType: "NDA",
     brandName: "AKEEGA",
     activeIngredient: "niraparib and abiraterone acetate",
@@ -428,8 +428,8 @@ export const fdaApprovals: DrugApproval[] = [
   {
     approvalMonth: "2025-12",
     approvalDate: "2025-12-22",
-    ndaBlaNumber: "BLA 761333",
-    applicationNo: "761333",
+    ndaBlaNumber: "BLA 761263",
+    applicationNo: "761263",
     applicationType: "BLA",
     brandName: "LUNSUMIO VELO",
     activeIngredient: "mosunetuzumab-axgb",
