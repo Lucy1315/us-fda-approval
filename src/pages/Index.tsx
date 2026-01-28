@@ -3,7 +3,7 @@ import { Pill, FlaskConical, Star, Microscope, Syringe, Activity } from "lucide-
 import { Header } from "@/components/dashboard/Header";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TherapeuticAreaChart } from "@/components/dashboard/TherapeuticAreaChart";
-import { ApprovalTypeChart } from "@/components/dashboard/ApprovalTypeChart";
+
 import { DesignationProgress } from "@/components/dashboard/DesignationProgress";
 import { DrugTable } from "@/components/dashboard/DrugTable";
 import { Highlights } from "@/components/dashboard/Highlights";
@@ -58,19 +58,6 @@ const Index = () => {
     return Array.from(areaMap.values());
   }, [filteredData]);
 
-  const approvalTypeData = useMemo(() => {
-    const typeMap = new Map<string, number>();
-    filteredData.forEach((drug) => {
-      const type = drug.approvalType || "기타";
-      typeMap.set(type, (typeMap.get(type) || 0) + 1);
-    });
-    return Array.from(typeMap.entries()).map(([name, value]) => ({ name, value }));
-  }, [filteredData]);
-
-  const drugCategoryData = useMemo(() => [
-    { name: "항암제", value: stats.oncology },
-    { name: "비항암제", value: stats.nonOncology },
-  ], [stats]);
 
   const specialDesignations = useMemo(() => {
     const total = stats.total || 1;
@@ -149,7 +136,6 @@ const Index = () => {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <TherapeuticAreaChart data={therapeuticAreaData} />
-          <ApprovalTypeChart approvalTypeData={approvalTypeData} drugCategoryData={drugCategoryData} />
           <Highlights data={filteredData} />
         </div>
 
