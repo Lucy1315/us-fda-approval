@@ -222,6 +222,13 @@ export function DrugTable({ data }: DrugTableProps) {
                 </div>
               </div>
               
+              {selectedDrug.supplementCategory && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Supplement Categories or Approval Type</p>
+                  <p className="text-sm font-medium text-blue-600">{selectedDrug.supplementCategory}</p>
+                </div>
+              )}
+              
               {selectedDrug.notes && (
                 <div>
                   <p className="text-sm text-muted-foreground">비고</p>
