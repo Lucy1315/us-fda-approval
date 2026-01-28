@@ -418,7 +418,7 @@ export const fdaApprovals: DrugApproval[] = [
     isOrphanDrug: false,
     approvalType: "정규승인",
     notes: "FDA 최초 승인 NK-1 수용체 길항제 (멀미 적응증)",
-    fdaUrl: "https://www.fda.gov/drugs/novel-drug-approvals-fda/novel-drug-approvals-2025",
+    fdaUrl: "https://www.fda.gov/drugs/news-events-human-drugs/fda-approves-tradipitant-prevention-motion-sickness-adults",
   },
 ];
 
