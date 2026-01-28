@@ -23,6 +23,7 @@ const Index = () => {
     isBiosimilar: "all",
     isNovelDrug: "all",
     isOrphanDrug: "all",
+    isCberProduct: "all",
   });
 
   const filteredData = useMemo(() => {

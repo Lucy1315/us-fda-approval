@@ -125,6 +125,7 @@ const defaultFilters: FilterState = {
   isBiosimilar: "all",
   isNovelDrug: "all",
   isOrphanDrug: "all",
+  isCberProduct: "all",
 };
 
 describe("applyFilters - Date Range Filters", () => {

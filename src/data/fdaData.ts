@@ -13,6 +13,7 @@ export interface DrugApproval {
   isBiosimilar: boolean;
   isNovelDrug: boolean;
   isOrphanDrug: boolean;
+  isCberProduct?: boolean; // CBER-regulated product (tissue, cellular/gene therapy) - not in Drugs@FDA
   approvalType: string;
   supplementCategory?: string; // Supplement Categories or Approval Type
   notes: string;
@@ -36,6 +37,7 @@ export const fdaApprovals: DrugApproval[] = [
     isBiosimilar: false,
     isNovelDrug: true,
     isOrphanDrug: false,
+    isCberProduct: true, // Tissue product - CBER regulated
     approvalType: "정규승인",
     supplementCategory: "ORIG-1 (New Molecular Entity)",
     notes: "FDA 최초 승인 무세포 신경 동종이식",
@@ -77,6 +79,7 @@ export const fdaApprovals: DrugApproval[] = [
     isBiosimilar: false,
     isNovelDrug: true,
     isOrphanDrug: true,
+    isCberProduct: true, // Gene therapy - CBER regulated
     approvalType: "정규승인",
     supplementCategory: "ORIG-1 (New Molecular Entity)",
     notes: "FDA 최초 승인 WAS 유전자 치료",

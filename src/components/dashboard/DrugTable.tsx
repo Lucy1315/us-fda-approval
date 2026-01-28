@@ -151,6 +151,11 @@ export function DrugTable({ data }: DrugTableProps) {
                             바이오시밀러
                           </Badge>
                         )}
+                        {drug.isCberProduct && (
+                          <Badge variant="outline" className="text-xs border-rose-500 text-rose-600 bg-rose-50">
+                            CBER
+                          </Badge>
+                        )}
                         {drug.approvalType === "신속승인" && (
                           <Badge variant="outline" className="text-xs border-secondary bg-secondary/10 text-secondary">
                             신속승인
