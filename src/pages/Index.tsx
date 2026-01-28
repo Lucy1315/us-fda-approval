@@ -25,7 +25,11 @@ const Index = () => {
     isOrphanDrug: "all",
   });
 
-  const filteredData = useMemo(() => applyFilters(data, filters), [data, filters]);
+  const filteredData = useMemo(() => {
+    const next = applyFilters(data, filters);
+    // Always show the detailed list in chronological (oldest -> newest) order.
+    return [...next].sort((a, b) => a.approvalDate.localeCompare(b.approvalDate));
+  }, [data, filters]);
 
   const stats = useMemo(() => {
     const total = filteredData.length;
