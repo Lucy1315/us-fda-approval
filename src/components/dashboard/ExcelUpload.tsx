@@ -85,6 +85,7 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
         isNovelDrug: getBoolValue(["is_novel_drug", "신약", "IsNovelDrug", "신약여부"]),
         isOrphanDrug: getBoolValue(["is_orphan_drug", "희귀의약품", "IsOrphanDrug", "희귀의약품여부"]),
         approvalType: getValue(["approval_type", "승인유형", "ApprovalType"]),
+        supplementCategory: getValue(["supplement_category", "변경카테고리", "SupplementCategory", "Supplement Categories or Approval Type"]),
         notes: getValue(["notes", "비고", "Notes"]),
         fdaUrl: getValue(["fda_url", "fdaUrl", "FDA_URL", "FDA승인페이지"]),
       };
