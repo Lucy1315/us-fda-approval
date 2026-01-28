@@ -311,6 +311,12 @@ function parseLocalDate(dateStr: string): Date {
 export function applyFilters(data: DrugApproval[], filters: FilterState): DrugApproval[] {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // Use the latest approval date in the dataset as the reference point when it's ahead of the user's system date.
+  // This avoids confusing results in environments where the system clock is behind the data timeline.
+  const referenceDate = data.reduce<Date>((max, d) => {
+    const dt = parseLocalDate(d.approvalDate);
+    return dt > max ? dt : max;
+  }, today);
 
   return data.filter((drug) => {
     // Parse approval date as local date to avoid timezone issues
@@ -328,7 +334,7 @@ export function applyFilters(data: DrugApproval[], filters: FilterState): DrugAp
       }
     } else if (filters.dateRange !== "all") {
       // Preset date range filter - calculate cutoff date from today
-      const cutoffDate = new Date(today.getTime());
+      const cutoffDate = new Date(referenceDate.getTime());
       
       switch (filters.dateRange) {
         case "1m": cutoffDate.setMonth(cutoffDate.getMonth() - 1); break;
