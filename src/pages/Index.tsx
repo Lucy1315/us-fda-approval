@@ -4,7 +4,7 @@ import { Header } from "@/components/dashboard/Header";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TherapeuticAreaChart } from "@/components/dashboard/TherapeuticAreaChart";
 
-import { DesignationProgress } from "@/components/dashboard/DesignationProgress";
+
 import { DrugTable } from "@/components/dashboard/DrugTable";
 import { Highlights } from "@/components/dashboard/Highlights";
 import { Filters, FilterState, applyFilters } from "@/components/dashboard/Filters";
@@ -59,14 +59,6 @@ const Index = () => {
   }, [filteredData]);
 
 
-  const specialDesignations = useMemo(() => {
-    const total = stats.total || 1;
-    return [
-      { name: "희귀의약품", value: stats.orphanDrug, percentage: Math.round((stats.orphanDrug / total) * 100) },
-      { name: "신약", value: stats.novelDrug, percentage: Math.round((stats.novelDrug / total) * 100) },
-      { name: "바이오시밀러", value: stats.biosimilar, percentage: Math.round((stats.biosimilar / total) * 100) },
-    ];
-  }, [stats]);
 
   const handleDataUpdate = (newData: DrugApproval[]) => {
     setData(newData);
@@ -139,14 +131,9 @@ const Index = () => {
           <Highlights data={filteredData} />
         </div>
 
-        {/* Progress Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          <div className="lg:col-span-1">
-            <DesignationProgress data={specialDesignations} />
-          </div>
-          <div className="lg:col-span-3">
-            <DrugTable data={filteredData} />
-          </div>
+        {/* Drug Table Section */}
+        <div className="mb-8">
+          <DrugTable data={filteredData} />
         </div>
 
         {/* Footer */}
