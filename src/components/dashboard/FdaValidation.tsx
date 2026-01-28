@@ -175,6 +175,50 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
     toast.success(`${result.brandName} → ${fdaBrandName} 수정 완료`);
   };
 
+  const handleApplyAllFixes = () => {
+    if (!onDataUpdate) return;
+
+    const fixableResults = invalidResults.filter(
+      (r) => r.fdaBrandNames.length > 0 && !r.error?.includes("not found")
+    );
+
+    if (fixableResults.length === 0) {
+      toast.warning("자동 수정 가능한 항목이 없습니다.");
+      return;
+    }
+
+    let updatedData = [...data];
+    const appliedFixes: string[] = [];
+
+    fixableResults.forEach((result) => {
+      const fdaBrandName = result.fdaBrandNames[0];
+      updatedData = updatedData.map((drug) => {
+        if (drug.applicationNo === result.applicationNo) {
+          appliedFixes.push(`${result.brandName} → ${fdaBrandName}`);
+          return {
+            ...drug,
+            brandName: fdaBrandName,
+          };
+        }
+        return drug;
+      });
+    });
+
+    onDataUpdate(updatedData);
+
+    setResults((prev) =>
+      prev.map((r) => {
+        const fixable = fixableResults.find((f) => f.applicationNo === r.applicationNo);
+        if (fixable) {
+          return { ...r, brandName: fixable.fdaBrandNames[0], isValid: true };
+        }
+        return r;
+      })
+    );
+
+    toast.success(`${appliedFixes.length}건의 수정이 완료되었습니다.`);
+  };
+
   const invalidResults = results.filter((r) => !r.isValid);
   const validResults = results.filter((r) => r.isValid);
 
@@ -280,8 +324,22 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
           </TabsContent>
 
           <TabsContent value="fix" className="space-y-4 mt-4">
-            <div className="text-sm text-muted-foreground">
-              FDA 공식 데이터와 불일치하는 항목을 수정합니다. FDA 등록 제품명을 클릭하면 자동으로 적용됩니다.
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                FDA 공식 데이터와 불일치하는 항목을 수정합니다. FDA 등록 제품명을 클릭하면 자동으로 적용됩니다.
+              </div>
+              {invalidResults.length > 0 && invalidResults.some((r) => r.fdaBrandNames.length > 0) && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleApplyAllFixes}
+                  disabled={!onDataUpdate}
+                  className="gap-2"
+                >
+                  <Check className="h-4 w-4" />
+                  모두 적용
+                </Button>
+              )}
             </div>
 
             {invalidResults.length === 0 ? (
