@@ -34,8 +34,10 @@ const Index = () => {
     const novelOncology = filteredData.filter((d) => d.isNovelDrug && d.isOncology).length;
     const novelNonOncology = novelDrug - novelOncology;
     const orphanDrug = filteredData.filter((d) => d.isOrphanDrug).length;
+    const blaCount = filteredData.filter((d) => d.applicationType === "BLA").length;
+    const ndaCount = filteredData.filter((d) => d.applicationType === "NDA").length;
 
-    return { total, oncology, nonOncology, biosimilar, novelDrug, novelOncology, novelNonOncology, orphanDrug };
+    return { total, oncology, nonOncology, biosimilar, novelDrug, novelOncology, novelNonOncology, orphanDrug, blaCount, ndaCount };
   }, [filteredData]);
 
   const therapeuticAreaData = useMemo(() => {
@@ -127,9 +129,9 @@ const Index = () => {
             variant="secondary"
           />
           <StatCard
-            title="BLA 신청"
-            value={stats.total > 0 ? "100%" : "0%"}
-            subtitle="모든 제품"
+            title="BLA / NDA"
+            value={`${stats.blaCount} / ${stats.ndaCount}`}
+            subtitle={`BLA ${stats.total > 0 ? Math.round((stats.blaCount / stats.total) * 100) : 0}%`}
             icon={Activity}
             variant="primary"
           />
