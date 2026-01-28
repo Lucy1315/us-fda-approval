@@ -14,6 +14,8 @@ const Index = () => {
   const [data, setData] = useState<DrugApproval[]>(fdaApprovals);
   const [filters, setFilters] = useState<FilterState>({
     dateRange: "all",
+    startDate: undefined,
+    endDate: undefined,
     applicationType: "all",
     sponsor: "all",
     therapeuticArea: "all",
