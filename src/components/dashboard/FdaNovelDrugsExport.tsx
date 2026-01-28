@@ -28,6 +28,65 @@ interface FdaNovelDrugsExportProps {
 
 type ExportMode = "all" | "filtered" | "custom";
 
+// 치료영역 영문 매핑
+const therapeuticAreaEnMap: Record<string, string> = {
+  "항암제 - 다발골수종": "Oncology - Multiple Myeloma",
+  "항암제 - 림프종": "Oncology - Lymphoma",
+  "항암제 - 폐암": "Oncology - Lung Cancer",
+  "항암제 - 유방암": "Oncology - Breast Cancer",
+  "항암제 - 전립선암": "Oncology - Prostate Cancer",
+  "항암제 - 골전이": "Oncology - Bone Metastasis",
+  "항암제 - 위암": "Oncology - Gastric Cancer",
+  "항암제 - 간암": "Oncology - Liver Cancer",
+  "항암제 - 췌장암": "Oncology - Pancreatic Cancer",
+  "항암제 - 대장암": "Oncology - Colorectal Cancer",
+  "항암제 - 신장암": "Oncology - Renal Cancer",
+  "항암제 - 방광암": "Oncology - Bladder Cancer",
+  "항암제 - 흑색종": "Oncology - Melanoma",
+  "항암제 - 백혈병": "Oncology - Leukemia",
+  "소아과 - 대사질환": "Pediatrics - Metabolic Diseases",
+  "신경과 - 다발성 경화증": "Neurology - Multiple Sclerosis",
+  "신경과 - 알츠하이머병": "Neurology - Alzheimer's Disease",
+  "신경과 - 파킨슨병": "Neurology - Parkinson's Disease",
+  "신경과 - 멀미": "Neurology - Motion Sickness",
+  "신경과 - 신경복구": "Neurology - Nerve Repair",
+  "류마티스내과": "Rheumatology",
+  "소화기내과/류마티스내과": "Gastroenterology/Rheumatology",
+  "피부과/소화기내과": "Dermatology/Gastroenterology",
+  "혈액종양내과": "Hematology/Oncology",
+  "혈액내과": "Hematology",
+  "혈액내과 - 지중해빈혈": "Hematology - Thalassemia",
+  "혈액내과 - TA-TMA": "Hematology - TA-TMA",
+  "안과": "Ophthalmology",
+  "심장내과 - 심부전": "Cardiology - Heart Failure",
+  "심장내과 - 부정맥": "Cardiology - Arrhythmia",
+  "심장내과 - 심근병증": "Cardiology - Cardiomyopathy",
+  "내분비내과 - 골다공증": "Endocrinology - Osteoporosis",
+  "내과 - 영양결핍": "Internal Medicine - Nutritional Deficiency",
+  "통증의학과": "Pain Medicine",
+  "감염내과 - 성매개감염병": "Infectious Disease - STI",
+  "호흡기내과 - 천식": "Pulmonology - Asthma",
+  "면역학 - 유전자치료": "Immunology - Gene Therapy",
+  "피부과 - 건선": "Dermatology - Psoriasis",
+};
+
+// 승인유형 영문 매핑
+const getApprovalTypeEn = (drug: DrugApproval): string => {
+  if (drug.approvalType === "정규승인") {
+    if (drug.isNovelDrug) {
+      return "Original Approval (Type 1 - New Molecular Entity)";
+    }
+    if (drug.isBiosimilar) {
+      return "Original Approval (Biosimilar)";
+    }
+    if (drug.notes?.includes("변경승인") || drug.notes?.includes("적응증")) {
+      return "Supplemental Approval";
+    }
+    return "Original Approval";
+  }
+  return "Supplemental Approval";
+};
+
 export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -75,51 +134,6 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
     return `${minDate} ~ ${maxDate}`;
   }, [exportData]);
 
-  // 색상 범례를 시트에 추가하는 함수
-  const addColorLegend = (sheet: ExcelJS.Worksheet, startRow: number) => {
-    const sectionHeaderStyle: Partial<ExcelJS.Fill> = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FFF3F4F6" },
-    };
-
-    let rowNum = startRow;
-    rowNum++; // 빈 줄
-
-    const legendHeaderRow = sheet.getRow(rowNum);
-    legendHeaderRow.getCell(1).value = "🎨 색상 범례";
-    legendHeaderRow.getCell(1).font = { bold: true, size: 11 };
-    legendHeaderRow.fill = sectionHeaderStyle as ExcelJS.Fill;
-    sheet.mergeCells(`A${rowNum}:B${rowNum}`);
-    rowNum++;
-
-    const legendOrange = sheet.getRow(rowNum);
-    legendOrange.getCell(1).value = "🟠 주황색";
-    legendOrange.getCell(2).value = "항암제";
-    legendOrange.getCell(2).fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FFFED7AA" },
-    };
-    rowNum++;
-
-    const legendGreen = sheet.getRow(rowNum);
-    legendGreen.getCell(1).value = "🟢 연두색";
-    legendGreen.getCell(2).value = "바이오시밀러";
-    legendGreen.getCell(2).fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FFBBF7D0" },
-    };
-    rowNum++;
-
-    const legendWhite = sheet.getRow(rowNum);
-    legendWhite.getCell(1).value = "⬜ 색상 없음";
-    legendWhite.getCell(2).value = "비항암제 (바이오시밀러 제외)";
-
-    return rowNum;
-  };
-
   // 데이터 행에 색상 적용
   const applyRowColor = (row: ExcelJS.Row, drug: DrugApproval, columns: number) => {
     if (drug.isOncology) {
@@ -141,6 +155,23 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
     }
   };
 
+  // 색상 범례를 시트에 추가
+  const addColorLegend = (sheet: ExcelJS.Worksheet, startRow: number, colCount: number) => {
+    let rowNum = startRow + 2;
+    
+    const legendRow1 = sheet.getRow(rowNum);
+    legendRow1.getCell(1).value = "🎨 색상 범례";
+    legendRow1.getCell(1).font = { bold: true, size: 10 };
+    rowNum++;
+
+    const legendRow2 = sheet.getRow(rowNum);
+    legendRow2.getCell(1).value = "🟠 주황색 = 항암제";
+    legendRow2.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFED7AA" } };
+    legendRow2.getCell(2).value = "🟢 연두색 = 바이오시밀러";
+    legendRow2.getCell(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFBBF7D0" } };
+    legendRow2.getCell(3).value = "⬜ 색상 없음 = 비항암제";
+  };
+
   const generateExcel = async () => {
     if (exportData.length === 0) {
       toast({
@@ -157,188 +188,69 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
       workbook.creator = "FDA Drug Approval Dashboard";
       workbook.created = new Date();
 
-      // 치료영역별 분포 계산
-      const therapeuticAreaMap = new Map<string, number>();
-      exportData.forEach(drug => {
-        const area = drug.therapeuticArea;
-        therapeuticAreaMap.set(area, (therapeuticAreaMap.get(area) || 0) + 1);
-      });
-      const therapeuticAreaStats = Array.from(therapeuticAreaMap.entries())
-        .sort((a, b) => b[1] - a[1]);
-
-      // ===== Sheet 1: 요약 통계 =====
+      // ===== Sheet 1: 요약 (Summary) =====
       const summarySheet = workbook.addWorksheet("요약");
-      summarySheet.columns = [
-        { key: "A", width: 35 },
-        { key: "B", width: 55 },
+      
+      const summaryColumns = [
+        { header: "승인일", key: "approvalDate", width: 12 },
+        { header: "제품명 (Brand)", key: "brandName", width: 16 },
+        { header: "성분명 (Active)", key: "activeIngredient", width: 30 },
+        { header: "NDA/BLA 번호", key: "ndaBlaNumber", width: 14 },
+        { header: "제약사", key: "sponsor", width: 22 },
+        { header: "승인유형", key: "approvalTypeKr", width: 10 },
+        { header: "Approval Type", key: "approvalTypeEn", width: 45 },
+        { header: "치료영역", key: "therapeuticArea", width: 18 },
+        { header: "Therapeutic Area", key: "therapeuticAreaEn", width: 35 },
+        { header: "신약여부", key: "isNovelDrug", width: 8 },
+        { header: "희귀의약품", key: "isOrphanDrug", width: 10 },
       ];
+      
+      summarySheet.columns = summaryColumns;
 
-      const sectionHeaderStyle: Partial<ExcelJS.Fill> = {
+      // 헤더 스타일
+      summarySheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+      summarySheet.getRow(1).fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: "FFF3F4F6" },
+        fgColor: { argb: "FF6366F1" },
       };
-      const valueStyle: Partial<ExcelJS.Font> = {
-        color: { argb: "FF1E40AF" },
-        bold: true,
-      };
+      summarySheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
-      let rowNum = 1;
-
-      // 타이틀
-      const titleRow = summarySheet.getRow(rowNum);
-      titleRow.getCell(1).value = "✅ US FDA 전문의약품 승인 현황";
-      titleRow.getCell(1).font = { bold: true, size: 16, color: { argb: "FF1E40AF" } };
-      summarySheet.mergeCells(`A${rowNum}:B${rowNum}`);
-      rowNum += 2;
-
-      // 기본 정보
-      summarySheet.getRow(rowNum).getCell(1).value = "📅 대상 기간";
-      summarySheet.getRow(rowNum).getCell(2).value = periodText;
-      rowNum++;
-      summarySheet.getRow(rowNum).getCell(1).value = "🗓️ 데이터 수집일";
-      summarySheet.getRow(rowNum).getCell(2).value = format(new Date(), "yyyy-MM-dd");
-      rowNum++;
-      summarySheet.getRow(rowNum).getCell(1).value = "🔗 데이터 출처";
-      summarySheet.getRow(rowNum).getCell(2).value = "FDA Official + Drugs.com + ASCO Post";
-      rowNum += 2;
-
-      // 승인 현황
-      const statsHeaderRow = summarySheet.getRow(rowNum);
-      statsHeaderRow.getCell(1).value = "☑️ 승인 현황";
-      statsHeaderRow.getCell(1).font = { bold: true, size: 12 };
-      statsHeaderRow.fill = sectionHeaderStyle as ExcelJS.Fill;
-      summarySheet.mergeCells(`A${rowNum}:B${rowNum}`);
-      rowNum++;
-
-      summarySheet.getRow(rowNum).getCell(1).value = "구분";
-      summarySheet.getRow(rowNum).getCell(2).value = "건수";
-      summarySheet.getRow(rowNum).font = { bold: true };
-      rowNum++;
-
-      summarySheet.getRow(rowNum).getCell(1).value = "전체 승인";
-      summarySheet.getRow(rowNum).getCell(2).value = stats.total;
-      summarySheet.getRow(rowNum).getCell(2).font = valueStyle;
-      rowNum++;
-
-      summarySheet.getRow(rowNum).getCell(1).value = "├─ 항암제";
-      summarySheet.getRow(rowNum).getCell(2).value = stats.oncologyCount;
-      summarySheet.getRow(rowNum).getCell(2).font = valueStyle;
-      rowNum++;
-
-      summarySheet.getRow(rowNum).getCell(1).value = "└─ 비항암제";
-      summarySheet.getRow(rowNum).getCell(2).value = stats.nonOncologyCount;
-      summarySheet.getRow(rowNum).getCell(2).font = valueStyle;
-      rowNum += 2;
-
-      summarySheet.getRow(rowNum).getCell(1).value = "바이오시밀러";
-      summarySheet.getRow(rowNum).getCell(2).value = stats.biosimilarCount;
-      summarySheet.getRow(rowNum).getCell(2).font = valueStyle;
-      rowNum++;
-
-      summarySheet.getRow(rowNum).getCell(1).value = "신약 (Novel Drug)";
-      summarySheet.getRow(rowNum).getCell(2).value = stats.novelDrugCount;
-      summarySheet.getRow(rowNum).getCell(2).font = valueStyle;
-      rowNum++;
-
-      summarySheet.getRow(rowNum).getCell(1).value = "희귀의약품 (Orphan Drug)";
-      summarySheet.getRow(rowNum).getCell(2).value = stats.orphanDrugCount;
-      summarySheet.getRow(rowNum).getCell(2).font = valueStyle;
-      rowNum += 2;
-
-      // 치료영역별 분포
-      const areaHeaderRow = summarySheet.getRow(rowNum);
-      areaHeaderRow.getCell(1).value = "📊 치료영역별 분포";
-      areaHeaderRow.getCell(1).font = { bold: true, size: 12 };
-      areaHeaderRow.fill = sectionHeaderStyle as ExcelJS.Fill;
-      summarySheet.mergeCells(`A${rowNum}:B${rowNum}`);
-      rowNum++;
-
-      therapeuticAreaStats.forEach(([area, count]) => {
-        summarySheet.getRow(rowNum).getCell(1).value = `• ${area}`;
-        summarySheet.getRow(rowNum).getCell(2).value = count;
-        rowNum++;
-      });
-      rowNum++;
-
-      // 승인 약물 목록
-      const drugListHeaderRow = summarySheet.getRow(rowNum);
-      drugListHeaderRow.getCell(1).value = "💊 승인 약물 목록";
-      drugListHeaderRow.getCell(1).font = { bold: true, size: 12 };
-      drugListHeaderRow.fill = sectionHeaderStyle as ExcelJS.Fill;
-      summarySheet.mergeCells(`A${rowNum}:B${rowNum}`);
-      rowNum++;
-
-      summarySheet.getRow(rowNum).getCell(1).value = "제품명";
-      summarySheet.getRow(rowNum).getCell(2).value = "치료영역";
-      summarySheet.getRow(rowNum).font = { bold: true };
-      rowNum++;
-
-      exportData.forEach(drug => {
-        const drugRow = summarySheet.getRow(rowNum);
-        drugRow.getCell(1).value = `• ${drug.brandName}`;
-        drugRow.getCell(2).value = drug.therapeuticArea;
+      exportData.forEach((drug) => {
+        const therapeuticAreaEn = therapeuticAreaEnMap[drug.therapeuticArea] || drug.therapeuticArea;
+        const approvalTypeEn = getApprovalTypeEn(drug);
+        const approvalTypeKr = drug.notes?.includes("변경승인") ? "변경승인" : "최초승인";
         
-        if (drug.isOncology) {
-          drugRow.getCell(2).fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFFED7AA" },
-          };
-        } else if (drug.isBiosimilar) {
-          drugRow.getCell(2).fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFBBF7D0" },
-          };
-        }
-        rowNum++;
-      });
-      rowNum++;
-
-      // 주요 출처
-      const sourceHeaderRow = summarySheet.getRow(rowNum);
-      sourceHeaderRow.getCell(1).value = "🌐 주요 출처";
-      sourceHeaderRow.getCell(1).font = { bold: true, size: 12 };
-      sourceHeaderRow.fill = sectionHeaderStyle as ExcelJS.Fill;
-      summarySheet.mergeCells(`A${rowNum}:B${rowNum}`);
-      rowNum++;
-
-      const sources = [
-        ["FDA Novel Drug Approvals", "https://www.fda.gov/drugs/novel-drug-approvals-fda/novel-drug-approvals-2025"],
-        ["Drugs.com New Approvals", "https://www.drugs.com/newdrugs.html"],
-        ["FDA Drugs@FDA Database", "https://www.accessdata.fda.gov/scripts/cder/daf/"],
-        ["ASCO Post", "https://ascopost.com"],
-      ];
-      sources.forEach(([name, url]) => {
-        summarySheet.getRow(rowNum).getCell(1).value = name;
-        summarySheet.getRow(rowNum).getCell(2).value = url;
-        rowNum++;
+        const row = summarySheet.addRow({
+          approvalDate: drug.approvalDate,
+          brandName: drug.brandName,
+          activeIngredient: drug.activeIngredient,
+          ndaBlaNumber: drug.ndaBlaNumber,
+          sponsor: drug.sponsor,
+          approvalTypeKr,
+          approvalTypeEn,
+          therapeuticArea: drug.therapeuticArea,
+          therapeuticAreaEn,
+          isNovelDrug: drug.isNovelDrug ? "Y" : "N",
+          isOrphanDrug: drug.isOrphanDrug ? "Y" : "N",
+        });
+        applyRowColor(row, drug, summaryColumns.length);
       });
 
-      // 색상 범례 추가
-      addColorLegend(summarySheet, rowNum);
+      addColorLegend(summarySheet, exportData.length + 1, summaryColumns.length);
 
       // ===== Sheet 2: 국문 상세 =====
       const krSheet = workbook.addWorksheet("국문 상세");
       
       const krColumns = [
-        { header: "승인월", key: "approvalMonth", width: 12 },
         { header: "승인일", key: "approvalDate", width: 12 },
-        { header: "NDA/BLA번호", key: "applicationNo", width: 15 },
-        { header: "신청유형", key: "applicationType", width: 10 },
-        { header: "제품명", key: "productName", width: 20 },
-        { header: "주성분", key: "activeIngredient", width: 30 },
+        { header: "제품명", key: "brandName", width: 14 },
+        { header: "성분명", key: "activeIngredient", width: 28 },
+        { header: "NDA/BLA 번호", key: "ndaBlaNumber", width: 14 },
         { header: "제약사", key: "sponsor", width: 22 },
-        { header: "적응증", key: "indication", width: 60 },
-        { header: "치료영역", key: "therapeuticArea", width: 25 },
-        { header: "항암제", key: "isOncology", width: 8 },
-        { header: "바이오시밀러", key: "isBiosimilar", width: 12 },
-        { header: "신약", key: "isNovelDrug", width: 8 },
-        { header: "희귀의약품", key: "isOrphanDrug", width: 12 },
-        { header: "승인유형", key: "approvalType", width: 12 },
-        { header: "비고", key: "notes", width: 40 },
-        { header: "FDA승인페이지", key: "fdaUrl", width: 50 },
+        { header: "승인유형", key: "approvalTypeKr", width: 10 },
+        { header: "치료영역", key: "therapeuticArea", width: 18 },
+        { header: "요약 (국문)", key: "summaryKr", width: 80 },
       ];
       
       krSheet.columns = krColumns;
@@ -352,54 +264,37 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
       krSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
       exportData.forEach((drug) => {
-        const approvalMonth = drug.approvalDate.substring(0, 7);
+        const approvalTypeKr = drug.notes?.includes("변경승인") ? "변경승인" : "최초승인";
+        const summaryKr = drug.indicationFull + (drug.notes ? ` ${drug.notes}` : "");
+        
         const row = krSheet.addRow({
-          approvalMonth,
           approvalDate: drug.approvalDate,
-          applicationNo: `${drug.applicationType} ${drug.applicationNo}`,
-          applicationType: drug.applicationType,
-          productName: drug.brandName,
+          brandName: drug.brandName,
           activeIngredient: drug.activeIngredient,
+          ndaBlaNumber: drug.ndaBlaNumber,
           sponsor: drug.sponsor,
-          indication: drug.indicationFull,
+          approvalTypeKr,
           therapeuticArea: drug.therapeuticArea,
-          isOncology: drug.isOncology ? "Y" : "N",
-          isBiosimilar: drug.isBiosimilar ? "Y" : "N",
-          isNovelDrug: drug.isNovelDrug ? "Y" : "N",
-          isOrphanDrug: drug.isOrphanDrug ? "Y" : "N",
-          approvalType: drug.approvalType,
-          notes: drug.notes || "",
-          fdaUrl: drug.fdaUrl || "",
+          summaryKr,
         });
         applyRowColor(row, drug, krColumns.length);
       });
 
-      krSheet.getColumn("indication").alignment = { wrapText: true };
-      krSheet.getColumn("notes").alignment = { wrapText: true };
+      krSheet.getColumn("summaryKr").alignment = { wrapText: true };
+      addColorLegend(krSheet, exportData.length + 1, krColumns.length);
 
-      // 국문 시트에 색상 범례 추가
-      addColorLegend(krSheet, exportData.length + 3);
-
-      // ===== Sheet 3: 영문 상세 =====
+      // ===== Sheet 3: English Details (영문만) =====
       const enSheet = workbook.addWorksheet("English Details");
       
       const enColumns = [
-        { header: "Approval Month", key: "approvalMonth", width: 14 },
         { header: "Approval Date", key: "approvalDate", width: 14 },
-        { header: "NDA/BLA Number", key: "applicationNo", width: 15 },
-        { header: "Type", key: "applicationType", width: 8 },
-        { header: "Brand Name", key: "productName", width: 20 },
-        { header: "Active Ingredient", key: "activeIngredient", width: 30 },
+        { header: "Brand Name", key: "brandName", width: 14 },
+        { header: "Active Ingredient", key: "activeIngredient", width: 28 },
+        { header: "NDA/BLA Number", key: "ndaBlaNumber", width: 16 },
         { header: "Sponsor", key: "sponsor", width: 22 },
-        { header: "Indication", key: "indication", width: 60 },
-        { header: "Therapeutic Area", key: "therapeuticArea", width: 25 },
-        { header: "Oncology", key: "isOncology", width: 10 },
-        { header: "Biosimilar", key: "isBiosimilar", width: 10 },
-        { header: "Novel Drug", key: "isNovelDrug", width: 12 },
-        { header: "Orphan Drug", key: "isOrphanDrug", width: 12 },
-        { header: "Approval Type", key: "approvalType", width: 15 },
-        { header: "Notes", key: "notes", width: 40 },
-        { header: "FDA URL", key: "fdaUrl", width: 50 },
+        { header: "Approval Type", key: "approvalTypeEn", width: 45 },
+        { header: "Therapeutic Area", key: "therapeuticAreaEn", width: 35 },
+        { header: "Summary (English)", key: "summaryEn", width: 90 },
       ];
 
       enSheet.columns = enColumns;
@@ -413,33 +308,125 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
       enSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
       exportData.forEach((drug) => {
-        const approvalMonth = drug.approvalDate.substring(0, 7);
+        const therapeuticAreaEn = therapeuticAreaEnMap[drug.therapeuticArea] || drug.therapeuticArea;
+        const approvalTypeEn = getApprovalTypeEn(drug);
+        // 간략한 영문 요약 생성
+        const summaryEn = `${drug.isNovelDrug ? "Novel drug" : drug.isBiosimilar ? "Biosimilar" : "Drug"} for ${therapeuticAreaEn.toLowerCase()}. ${drug.notes || ""}`.trim();
+        
         const row = enSheet.addRow({
-          approvalMonth,
           approvalDate: drug.approvalDate,
-          applicationNo: `${drug.applicationType} ${drug.applicationNo}`,
-          applicationType: drug.applicationType,
-          productName: drug.brandName,
+          brandName: drug.brandName,
           activeIngredient: drug.activeIngredient,
+          ndaBlaNumber: drug.ndaBlaNumber,
           sponsor: drug.sponsor,
-          indication: drug.indicationFull,
-          therapeuticArea: drug.therapeuticArea,
-          isOncology: drug.isOncology ? "Y" : "N",
-          isBiosimilar: drug.isBiosimilar ? "Y" : "N",
-          isNovelDrug: drug.isNovelDrug ? "Y" : "N",
-          isOrphanDrug: drug.isOrphanDrug ? "Y" : "N",
-          approvalType: drug.approvalType,
-          notes: drug.notes || "",
-          fdaUrl: drug.fdaUrl || "",
+          approvalTypeEn,
+          therapeuticAreaEn,
+          summaryEn,
         });
         applyRowColor(row, drug, enColumns.length);
       });
 
-      enSheet.getColumn("indication").alignment = { wrapText: true };
-      enSheet.getColumn("notes").alignment = { wrapText: true };
+      enSheet.getColumn("summaryEn").alignment = { wrapText: true };
+      addColorLegend(enSheet, exportData.length + 1, enColumns.length);
 
-      // 영문 시트에 색상 범례 추가
-      addColorLegend(enSheet, exportData.length + 3);
+      // ===== Sheet 4: 최초승인 (ORIG-1) =====
+      const origSheet = workbook.addWorksheet("최초승인 (ORIG-1)");
+      
+      const origColumns = [
+        { header: "승인일", key: "approvalDate", width: 12 },
+        { header: "제품명", key: "brandName", width: 12 },
+        { header: "성분명", key: "activeIngredient", width: 22 },
+        { header: "NDA/BLA 번호", key: "ndaBlaNumber", width: 14 },
+        { header: "제약사", key: "sponsor", width: 22 },
+        { header: "승인유형", key: "approvalTypeEn", width: 45 },
+        { header: "요약 (국문)", key: "summaryKr", width: 65 },
+        { header: "Summary (English)", key: "summaryEn", width: 75 },
+      ];
+
+      origSheet.columns = origColumns;
+
+      origSheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+      origSheet.getRow(1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFDC2626" },
+      };
+      origSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
+
+      // 최초승인 필터 (변경승인이 아닌 것)
+      const originalApprovals = exportData.filter(d => !d.notes?.includes("변경승인"));
+      
+      originalApprovals.forEach((drug) => {
+        const therapeuticAreaEn = therapeuticAreaEnMap[drug.therapeuticArea] || drug.therapeuticArea;
+        const approvalTypeEn = getApprovalTypeEn(drug);
+        const summaryKr = drug.indicationFull + (drug.notes ? ` ${drug.notes}` : "");
+        const summaryEn = `${drug.isNovelDrug ? "Novel drug" : drug.isBiosimilar ? "Biosimilar" : "Drug"} for ${therapeuticAreaEn.toLowerCase()}. ${drug.notes || ""}`.trim();
+        
+        const row = origSheet.addRow({
+          approvalDate: drug.approvalDate,
+          brandName: drug.brandName,
+          activeIngredient: drug.activeIngredient,
+          ndaBlaNumber: drug.ndaBlaNumber,
+          sponsor: drug.sponsor,
+          approvalTypeEn,
+          summaryKr,
+          summaryEn,
+        });
+        applyRowColor(row, drug, origColumns.length);
+      });
+
+      origSheet.getColumn("summaryKr").alignment = { wrapText: true };
+      origSheet.getColumn("summaryEn").alignment = { wrapText: true };
+      addColorLegend(origSheet, originalApprovals.length + 1, origColumns.length);
+
+      // ===== Sheet 5: 변경승인 (SUPPL) =====
+      const supplSheet = workbook.addWorksheet("변경승인 (SUPPL)");
+      
+      const supplColumns = [
+        { header: "승인일", key: "approvalDate", width: 12 },
+        { header: "제품명", key: "brandName", width: 12 },
+        { header: "성분명", key: "activeIngredient", width: 26 },
+        { header: "NDA/BLA 번호", key: "ndaBlaNumber", width: 14 },
+        { header: "제약사", key: "sponsor", width: 22 },
+        { header: "승인유형", key: "approvalTypeEn", width: 35 },
+        { header: "요약 (국문)", key: "summaryKr", width: 60 },
+        { header: "Summary (English)", key: "summaryEn", width: 70 },
+      ];
+
+      supplSheet.columns = supplColumns;
+
+      supplSheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+      supplSheet.getRow(1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFF59E0B" },
+      };
+      supplSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
+
+      // 변경승인 필터
+      const supplementalApprovals = exportData.filter(d => d.notes?.includes("변경승인"));
+      
+      supplementalApprovals.forEach((drug) => {
+        const therapeuticAreaEn = therapeuticAreaEnMap[drug.therapeuticArea] || drug.therapeuticArea;
+        const summaryKr = drug.indicationFull + (drug.notes ? ` ${drug.notes}` : "");
+        const summaryEn = `Supplemental approval for ${therapeuticAreaEn.toLowerCase()}. ${drug.notes || ""}`.trim();
+        
+        const row = supplSheet.addRow({
+          approvalDate: drug.approvalDate,
+          brandName: drug.brandName,
+          activeIngredient: drug.activeIngredient,
+          ndaBlaNumber: drug.ndaBlaNumber,
+          sponsor: drug.sponsor,
+          approvalTypeEn: "Supplemental Approval",
+          summaryKr,
+          summaryEn,
+        });
+        applyRowColor(row, drug, supplColumns.length);
+      });
+
+      supplSheet.getColumn("summaryKr").alignment = { wrapText: true };
+      supplSheet.getColumn("summaryEn").alignment = { wrapText: true };
+      addColorLegend(supplSheet, supplementalApprovals.length + 1, supplColumns.length);
 
       // 파일명 생성
       let fileName = "US-FDA-Approvals";
@@ -626,11 +613,13 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
           </div>
 
           <div className="text-xs text-muted-foreground space-y-1">
-            <p className="font-medium">포함 시트:</p>
+            <p className="font-medium">포함 시트 (5개):</p>
             <ul className="list-disc list-inside space-y-0.5 ml-2">
-              <li>요약 (통계 + 치료영역별 분포 + 약물 목록)</li>
-              <li>국문 상세 (전체 컬럼)</li>
-              <li>English Details (전체 컬럼)</li>
+              <li>요약 (국문+영문 혼합)</li>
+              <li>국문 상세</li>
+              <li>English Details (영문만)</li>
+              <li>최초승인 (ORIG-1)</li>
+              <li>변경승인 (SUPPL)</li>
             </ul>
             <p className="mt-2 text-muted-foreground/80">* 모든 시트에 색상 범례가 포함됩니다.</p>
           </div>
