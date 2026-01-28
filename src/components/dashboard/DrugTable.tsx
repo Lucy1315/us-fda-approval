@@ -68,13 +68,15 @@ export function DrugTable({ data }: DrugTableProps) {
   }, [data, searchTerm]);
 
   // Ensure stable chronological rendering (and avoid React row re-use issues with duplicate applicationNo)
-  const sorted = [...filteredData].sort((a, b) => {
-    const byDate = a.approvalDate.localeCompare(b.approvalDate);
-    if (byDate !== 0) return byDate;
-    const byApp = a.applicationNo.localeCompare(b.applicationNo);
-    if (byApp !== 0) return byApp;
-    return (a.supplementCategory || "").localeCompare(b.supplementCategory || "");
-  });
+  const sorted = useMemo(() => {
+    return [...filteredData].sort((a, b) => {
+      const byDate = a.approvalDate.localeCompare(b.approvalDate);
+      if (byDate !== 0) return byDate;
+      const byApp = a.applicationNo.localeCompare(b.applicationNo);
+      if (byApp !== 0) return byApp;
+      return (a.supplementCategory || "").localeCompare(b.supplementCategory || "");
+    });
+  }, [filteredData]);
 
   if (data.length === 0) {
     return (
