@@ -318,17 +318,19 @@ export function applyFilters(data: DrugApproval[], filters: FilterState): DrugAp
       }
     } else if (filters.dateRange !== "all") {
       // Preset date range filter
-      let cutoffDate = new Date();
+      const cutoffDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
       switch (filters.dateRange) {
-        case "1m": cutoffDate.setMonth(now.getMonth() - 1); break;
-        case "3m": cutoffDate.setMonth(now.getMonth() - 3); break;
-        case "6m": cutoffDate.setMonth(now.getMonth() - 6); break;
-        case "1y": cutoffDate.setFullYear(now.getFullYear() - 1); break;
-        case "2y": cutoffDate.setFullYear(now.getFullYear() - 2); break;
+        case "1m": cutoffDate.setMonth(cutoffDate.getMonth() - 1); break;
+        case "3m": cutoffDate.setMonth(cutoffDate.getMonth() - 3); break;
+        case "6m": cutoffDate.setMonth(cutoffDate.getMonth() - 6); break;
+        case "1y": cutoffDate.setFullYear(cutoffDate.getFullYear() - 1); break;
+        case "2y": cutoffDate.setFullYear(cutoffDate.getFullYear() - 2); break;
       }
       
-      if (approvalDate < cutoffDate) return false;
+      // Compare dates without time
+      const approvalDateOnly = new Date(approvalDate.getFullYear(), approvalDate.getMonth(), approvalDate.getDate());
+      if (approvalDateOnly < cutoffDate) return false;
     }
 
     // Application type filter
