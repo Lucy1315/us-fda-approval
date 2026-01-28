@@ -41,7 +41,7 @@ export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
             </div>
           </div>
           <UsageGuide />
-          <FdaValidation data={data} />
+          <FdaValidation data={data} onDataUpdate={onDataUpdate} />
           <FdaNovelDrugsExport data={data} filteredData={filteredData} />
           <ExcelUpload onDataUpdate={onDataUpdate} />
         </div>
