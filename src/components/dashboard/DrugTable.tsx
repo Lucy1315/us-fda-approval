@@ -30,8 +30,10 @@ function getFdaProductUrl(drug: DrugApproval): string {
   // 2) Add explicit exceptions ONLY for products that are not in Drugs@FDA
   //    (e.g., CBER-regulated tissue / cellular & gene therapy products).
   const cberByApplicationNo: Record<string, string> = {
-    // AVANCE: Tissue product (CBER) — link to Vaccines, Blood & Biologics section page
+    // AVANCE: Tissue product (CBER)
     "125816": "https://www.fda.gov/vaccines-blood-biologics/avance",
+    // BREYANZI: Cellular/Gene Therapy (CBER)
+    "125714": "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/breyanzi",
     // WASKYRA: Cellular/Gene Therapy (CBER)
     "125846": "https://www.fda.gov/vaccines-blood-biologics/waskyra",
   };
