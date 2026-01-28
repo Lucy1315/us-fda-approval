@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -17,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DrugApproval } from "@/data/fdaData";
-import { Eye, ExternalLink } from "lucide-react";
+import { Eye, ExternalLink, Search, RotateCcw } from "lucide-react";
 
 interface DrugTableProps {
   data: DrugApproval[];
@@ -30,9 +31,9 @@ function getFdaProductUrl(drug: DrugApproval): string {
   //    (e.g., CBER-regulated tissue / cellular & gene therapy products).
   const cberByApplicationNo: Record<string, string> = {
     // AVANCE: Tissue product (CBER) — link to Vaccines, Blood & Biologics section page
-    "761544": "https://www.fda.gov/vaccines-blood-biologics/tissue-tissue-products/avance-nerve-graft",
+    "125816": "https://www.fda.gov/vaccines-blood-biologics/avance",
     // WASKYRA: Cellular/Gene Therapy (CBER)
-    "125832": "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/waskyra-beremagene-geparvorepvec",
+    "125846": "https://www.fda.gov/vaccines-blood-biologics/waskyra",
   };
 
   if (cberByApplicationNo[drug.applicationNo]) return cberByApplicationNo[drug.applicationNo];
@@ -49,9 +50,23 @@ function getFdaProductUrl(drug: DrugApproval): string {
 
 export function DrugTable({ data }: DrugTableProps) {
   const [selectedDrug, setSelectedDrug] = useState<DrugApproval | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Filter data based on search term
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return data;
+    const term = searchTerm.toLowerCase();
+    return data.filter(drug => 
+      drug.brandName.toLowerCase().includes(term) ||
+      drug.activeIngredient.toLowerCase().includes(term) ||
+      drug.sponsor.toLowerCase().includes(term) ||
+      drug.therapeuticArea.toLowerCase().includes(term) ||
+      drug.ndaBlaNumber.toLowerCase().includes(term)
+    );
+  }, [data, searchTerm]);
 
   // Ensure stable chronological rendering (and avoid React row re-use issues with duplicate applicationNo)
-  const sorted = [...data].sort((a, b) => {
+  const sorted = [...filteredData].sort((a, b) => {
     const byDate = a.approvalDate.localeCompare(b.approvalDate);
     if (byDate !== 0) return byDate;
     const byApp = a.applicationNo.localeCompare(b.applicationNo);
@@ -77,10 +92,31 @@ export function DrugTable({ data }: DrugTableProps) {
   return (
     <>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="text-lg font-semibold">
-            승인 약물 상세 목록 ({data.length}건)
+            승인 약물 상세 목록 ({filteredData.length}건{searchTerm && ` / 전체 ${data.length}건`})
           </CardTitle>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="검색 (제품명, 성분, 제약사...)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 w-[250px] h-9"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSearchTerm("")}
+              disabled={!searchTerm}
+              className="h-9"
+            >
+              <RotateCcw className="h-4 w-4 mr-1" />
+              초기화
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
