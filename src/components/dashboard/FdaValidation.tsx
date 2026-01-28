@@ -44,10 +44,12 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [activeTab, setActiveTab] = useState("validate");
   const [editingItem, setEditingItem] = useState<EditState | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
 
   const handleValidate = async () => {
     setIsValidating(true);
     setResults([]);
+    setHasChanges(false);
     
     const uniqueApps = new Map<string, { applicationNo: string; brandName: string; applicationType: string }>();
     
@@ -146,6 +148,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
     );
 
     setEditingItem(null);
+    setHasChanges(true);
     toast.success(`${result.brandName} → ${editingItem.newBrandName} 수정 완료`);
   };
 
@@ -172,6 +175,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       )
     );
 
+    setHasChanges(true);
     toast.success(`${result.brandName} → ${fdaBrandName} 수정 완료`);
   };
 
@@ -216,7 +220,14 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       })
     );
 
+    setHasChanges(true);
     toast.success(`${appliedFixes.length}건의 수정이 완료되었습니다.`);
+  };
+
+  const handleFinalApply = () => {
+    setIsOpen(false);
+    setHasChanges(false);
+    toast.success("수정 사항이 대시보드에 적용되었습니다. 엑셀 내보내기 시에도 반영됩니다.");
   };
 
   const invalidResults = results.filter((r) => !r.isValid);
@@ -345,8 +356,31 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
             {invalidResults.length === 0 ? (
               <div className="p-4 bg-primary/10 rounded-md border border-primary/20 text-center">
                 <CheckCircle className="h-8 w-8 text-primary mx-auto mb-2" />
-                <p className="font-medium text-primary">수정할 항목이 없습니다.</p>
-                <p className="text-sm text-muted-foreground mt-1">먼저 검증을 실행해주세요.</p>
+                {hasChanges ? (
+                  <>
+                    <p className="font-medium text-primary">모든 수정이 완료되었습니다.</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      아래 "적용" 버튼을 클릭하여 대시보드에 반영하세요.
+                    </p>
+                    <Button
+                      className="mt-4 gap-2"
+                      onClick={handleFinalApply}
+                    >
+                      <Check className="h-4 w-4" />
+                      적용
+                    </Button>
+                  </>
+                ) : results.length > 0 ? (
+                  <>
+                    <p className="font-medium text-primary">모든 데이터가 일치합니다.</p>
+                    <p className="text-sm text-muted-foreground mt-1">수정할 항목이 없습니다.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium text-primary">수정할 항목이 없습니다.</p>
+                    <p className="text-sm text-muted-foreground mt-1">먼저 검증을 실행해주세요.</p>
+                  </>
+                )}
               </div>
             ) : (
               <ScrollArea className="h-[400px] border rounded-md">
