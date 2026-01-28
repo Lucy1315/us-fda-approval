@@ -302,23 +302,33 @@ export function Filters({ data, filters, onFilterChange }: FiltersProps) {
   );
 }
 
+// Helper function to parse date string as local date (avoids UTC timezone issues)
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export function applyFilters(data: DrugApproval[], filters: FilterState): DrugApproval[] {
   const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   return data.filter((drug) => {
-    const approvalDate = new Date(drug.approvalDate);
+    // Parse approval date as local date to avoid timezone issues
+    const approvalDate = parseLocalDate(drug.approvalDate);
     
     // Custom date range filter
     if (filters.dateRange === "custom") {
-      if (filters.startDate && approvalDate < filters.startDate) return false;
+      if (filters.startDate) {
+        const startDateOnly = new Date(filters.startDate.getFullYear(), filters.startDate.getMonth(), filters.startDate.getDate());
+        if (approvalDate < startDateOnly) return false;
+      }
       if (filters.endDate) {
-        const endOfDay = new Date(filters.endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        if (approvalDate > endOfDay) return false;
+        const endDateOnly = new Date(filters.endDate.getFullYear(), filters.endDate.getMonth(), filters.endDate.getDate());
+        if (approvalDate > endDateOnly) return false;
       }
     } else if (filters.dateRange !== "all") {
-      // Preset date range filter
-      const cutoffDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      // Preset date range filter - calculate cutoff date from today
+      const cutoffDate = new Date(today.getTime());
       
       switch (filters.dateRange) {
         case "1m": cutoffDate.setMonth(cutoffDate.getMonth() - 1); break;
@@ -328,9 +338,8 @@ export function applyFilters(data: DrugApproval[], filters: FilterState): DrugAp
         case "2y": cutoffDate.setFullYear(cutoffDate.getFullYear() - 2); break;
       }
       
-      // Compare dates without time
-      const approvalDateOnly = new Date(approvalDate.getFullYear(), approvalDate.getMonth(), approvalDate.getDate());
-      if (approvalDateOnly < cutoffDate) return false;
+      // Direct comparison - both dates are local dates without time component
+      if (approvalDate < cutoffDate) return false;
     }
 
     // Application type filter
