@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Shield, CheckCircle, XCircle, Loader2, AlertTriangle, Edit, Check, X } from "lucide-react";
 import {
@@ -45,6 +45,17 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
   const [activeTab, setActiveTab] = useState("validate");
   const [editingItem, setEditingItem] = useState<EditState | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  // Local draft so that user edits only commit to dashboard when they click the final "적용" button.
+  const [draftData, setDraftData] = useState<DrugApproval[] | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    // Start a fresh draft whenever the dialog opens.
+    setDraftData(data);
+    setHasChanges(false);
+    setEditingItem(null);
+    // Keep current tab; user may reopen to continue fixing.
+  }, [isOpen, data]);
 
   const handleValidate = async () => {
     setIsValidating(true);
@@ -121,9 +132,10 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
   };
 
   const handleApplyFix = (result: ValidationResult) => {
-    if (!editingItem || !onDataUpdate) return;
+    if (!editingItem) return;
 
-    const updatedData = data.map((drug) => {
+    const base = draftData ?? data;
+    const updatedData = base.map((drug) => {
       if (drug.applicationNo === result.applicationNo) {
         const applicationType = drug.applicationType;
         return {
@@ -136,7 +148,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       return drug;
     });
 
-    onDataUpdate(updatedData);
+    setDraftData(updatedData);
 
     // Update the result in local state
     setResults((prev) =>
@@ -147,15 +159,15 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       )
     );
 
-    setEditingItem(null);
     setHasChanges(true);
     toast.success(`${result.brandName} → ${editingItem.newBrandName} 수정 완료`);
+    setEditingItem(null);
   };
 
   const handleApplyFdaBrandName = (result: ValidationResult, fdaBrandName: string) => {
-    if (!onDataUpdate) return;
+    const base = draftData ?? data;
 
-    const updatedData = data.map((drug) => {
+    const updatedData = base.map((drug) => {
       if (drug.applicationNo === result.applicationNo) {
         return {
           ...drug,
@@ -165,7 +177,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       return drug;
     });
 
-    onDataUpdate(updatedData);
+    setDraftData(updatedData);
 
     setResults((prev) =>
       prev.map((r) =>
@@ -180,7 +192,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
   };
 
   const handleApplyAllFixes = () => {
-    if (!onDataUpdate) return;
+    const base = draftData ?? data;
 
     const fixableResults = invalidResults.filter(
       (r) => r.fdaBrandNames.length > 0 && !r.error?.includes("not found")
@@ -191,7 +203,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       return;
     }
 
-    let updatedData = [...data];
+    let updatedData = [...base];
     const appliedFixes: string[] = [];
 
     fixableResults.forEach((result) => {
@@ -208,7 +220,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       });
     });
 
-    onDataUpdate(updatedData);
+    setDraftData(updatedData);
 
     setResults((prev) =>
       prev.map((r) => {
@@ -225,6 +237,17 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
   };
 
   const handleFinalApply = () => {
+    if (!onDataUpdate) {
+      toast.error("적용할 수 없습니다. (데이터 업데이트 핸들러가 없습니다)");
+      return;
+    }
+    if (!draftData || !hasChanges) {
+      // Nothing to commit
+      setIsOpen(false);
+      return;
+    }
+
+    onDataUpdate(draftData);
     setIsOpen(false);
     setHasChanges(false);
     toast.success("수정 사항이 대시보드에 적용되었습니다. 엑셀 내보내기 시에도 반영됩니다.");
@@ -353,24 +376,23 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
               )}
             </div>
 
+            {/* Final commit button: always visible when there are pending changes */}
+            {hasChanges && (
+              <div className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2">
+                <div className="text-sm text-muted-foreground">
+                  수정 사항이 있습니다. 아래 <span className="font-medium text-foreground">적용</span>을 눌러 대시보드/엑셀에 반영하세요.
+                </div>
+                <Button onClick={handleFinalApply} className="gap-2" disabled={!onDataUpdate}>
+                  <Check className="h-4 w-4" />
+                  적용
+                </Button>
+              </div>
+            )}
+
             {invalidResults.length === 0 ? (
               <div className="p-4 bg-primary/10 rounded-md border border-primary/20 text-center">
                 <CheckCircle className="h-8 w-8 text-primary mx-auto mb-2" />
-                {hasChanges ? (
-                  <>
-                    <p className="font-medium text-primary">모든 수정이 완료되었습니다.</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      아래 "적용" 버튼을 클릭하여 대시보드에 반영하세요.
-                    </p>
-                    <Button
-                      className="mt-4 gap-2"
-                      onClick={handleFinalApply}
-                    >
-                      <Check className="h-4 w-4" />
-                      적용
-                    </Button>
-                  </>
-                ) : results.length > 0 ? (
+                {results.length > 0 ? (
                   <>
                     <p className="font-medium text-primary">모든 데이터가 일치합니다.</p>
                     <p className="text-sm text-muted-foreground mt-1">수정할 항목이 없습니다.</p>
@@ -474,7 +496,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
                                 <Button
                                   size="sm"
                                   onClick={() => handleApplyFix(result)}
-                                  disabled={!onDataUpdate}
+                                      disabled={!onDataUpdate}
                                 >
                                   <Check className="h-4 w-4" />
                                   적용
