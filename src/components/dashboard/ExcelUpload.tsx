@@ -69,12 +69,29 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
         return value.toLowerCase() === "true" || value === "Y" || value === "y" || value === "1";
       };
 
+      // Helper: strip "BLA " or "NDA " prefix from application number
+      const stripPrefix = (val: string): string => val.replace(/^(BLA|NDA)\s+/i, "").trim();
+
+      // Helper: normalize ndaBlaNumber to prevent "BLA BLA xxx" or "NDA NDA xxx"
+      const normalizeNdaBlaNumber = (ndaBla: string, appType: string, appNo: string): string => {
+        // If ndaBlaNumber has duplicate prefix like "BLA BLA 123456", fix it
+        const cleanNdaBla = ndaBla.replace(/^(BLA|NDA)\s+(BLA|NDA)\s+/i, "$1 ").trim();
+        if (cleanNdaBla) return cleanNdaBla;
+        // Fallback: construct from applicationType + applicationNo
+        if (appType && appNo) return `${appType} ${stripPrefix(appNo)}`;
+        return ndaBla;
+      };
+
+      const rawNdaBla = getValue(["nda_bla_number", "신청번호", "NDA_BLA_Number", "NDA/BLA번호"]);
+      const rawAppNo = getValue(["application_no", "허가번호", "ApplicationNo", "신청번호"]);
+      const rawAppType = getValue(["application_type", "신청유형", "ApplicationType"]);
+
       const drug: DrugApproval = {
         approvalMonth: getValue(["approval_month", "승인월", "ApprovalMonth"]),
         approvalDate: getValue(["approval_date", "승인일", "ApprovalDate"]),
-        ndaBlaNumber: getValue(["nda_bla_number", "신청번호", "NDA_BLA_Number", "NDA/BLA번호"]),
-        applicationNo: getValue(["application_no", "허가번호", "ApplicationNo", "신청번호"]),
-        applicationType: getValue(["application_type", "신청유형", "ApplicationType"]),
+        ndaBlaNumber: normalizeNdaBlaNumber(rawNdaBla, rawAppType, rawAppNo),
+        applicationNo: stripPrefix(rawAppNo),
+        applicationType: rawAppType,
         brandName: getValue(["brand_name", "제품명", "BrandName"]),
         activeIngredient: getValue(["active_ingredient", "주성분", "ActiveIngredient"]),
         sponsor: getValue(["sponsor", "제약사", "Sponsor"]),

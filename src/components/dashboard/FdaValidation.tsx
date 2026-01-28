@@ -131,18 +131,26 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
     });
   };
 
+  // Helper: strip "BLA " or "NDA " prefix from an application number if present
+  const stripApplicationPrefix = (appNo: string): string => {
+    return appNo.replace(/^(BLA|NDA)\s+/i, "").trim();
+  };
+
   const handleApplyFix = (result: ValidationResult) => {
     if (!editingItem) return;
 
     const base = draftData ?? data;
+    // Strip duplicate prefix from user input
+    const cleanedAppNo = stripApplicationPrefix(editingItem.newApplicationNo);
+
     const updatedData = base.map((drug) => {
       if (drug.applicationNo === result.applicationNo) {
         const applicationType = drug.applicationType;
         return {
           ...drug,
           brandName: editingItem.newBrandName,
-          applicationNo: editingItem.newApplicationNo,
-          ndaBlaNumber: `${applicationType} ${editingItem.newApplicationNo}`,
+          applicationNo: cleanedAppNo,
+          ndaBlaNumber: `${applicationType} ${cleanedAppNo}`,
         };
       }
       return drug;
