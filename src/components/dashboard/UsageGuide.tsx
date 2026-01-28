@@ -102,7 +102,13 @@ export function UsageGuide() {
                   <li><strong className="text-foreground">치료영역별 분포:</strong> 바 차트로 치료영역별 승인 건수 확인</li>
                   <li><strong className="text-foreground">승인유형/약물분류:</strong> 파이 차트로 승인 유형 및 항암제 비율 확인</li>
                   <li><strong className="text-foreground">주요 하이라이트:</strong> 주목할 만한 승인 건 요약</li>
-                  <li><strong className="text-foreground">상세 테이블:</strong> 전체 승인 목록을 테이블 형태로 확인, 컬럼 정렬 가능</li>
+                  <li><strong className="text-foreground">상세 테이블:</strong> 전체 승인 목록을 테이블 형태로 확인
+                    <ul className="list-disc list-inside ml-4 mt-1">
+                      <li>제품명 클릭 시 FDA 공식 페이지로 이동</li>
+                      <li>검색창에서 제품명, 성분, 제약사 등으로 검색 가능</li>
+                      <li>"초기화" 버튼으로 검색 조건 초기화</li>
+                    </ul>
+                  </li>
                 </ul>
               </div>
             </section>
