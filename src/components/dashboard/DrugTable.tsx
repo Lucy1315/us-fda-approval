@@ -24,8 +24,18 @@ interface DrugTableProps {
 }
 
 function getFdaProductUrl(drug: DrugApproval): string {
-  // Always use Drugs@FDA database lookup - most reliable and stable URL format
-  // Works for both NDA (drugs) and BLA (biologics) application numbers
+  // Special cases: CBER-regulated biologics/tissue products not in Drugs@FDA
+  const cberProducts: Record<string, string> = {
+    "AVANCE": "https://www.fda.gov/vaccines-blood-biologics/tissue-tissue-products/avance-nerve-graft",
+    "WASKYRA": "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/waskyra",
+  };
+  
+  const name = drug.brandName.trim().toUpperCase();
+  if (cberProducts[name]) {
+    return cberProducts[name];
+  }
+  
+  // Default: Drugs@FDA database lookup - works for NDA and most BLA products
   return `https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${drug.applicationNo}`;
 }
 
