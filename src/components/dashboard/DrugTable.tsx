@@ -24,22 +24,26 @@ interface DrugTableProps {
 }
 
 function getFdaProductUrl(drug: DrugApproval): string {
-  // Special cases: CBER-regulated biologics/tissue products not in Drugs@FDA
-  const cberProducts: Record<string, string> = {
-    "AVANCE": "https://www.fda.gov/vaccines-blood-biologics/tissue-tissue-products/avance-nerve-graft",
-    "WASKYRA": "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/waskyra",
+  // Rule:
+  // 1) Default to Drugs@FDA (CDER) lookup for consistency.
+  // 2) Add explicit exceptions ONLY for products that are not in Drugs@FDA
+  //    (e.g., CBER-regulated tissue / cellular & gene therapy products).
+  const cberByApplicationNo: Record<string, string> = {
+    // AVANCE: Tissue product (CBER) — link to Vaccines, Blood & Biologics section page
+    "761544": "https://www.fda.gov/vaccines-blood-biologics/tissue-tissue-products/avance-nerve-graft",
+    // WASKYRA: Cellular/Gene Therapy (CBER)
+    "125832": "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/waskyra-beremagene-geparvorepvec",
   };
-  
-  const name = drug.brandName.trim().toUpperCase();
-  if (cberProducts[name]) {
-    return cberProducts[name];
+
+  if (cberByApplicationNo[drug.applicationNo]) return cberByApplicationNo[drug.applicationNo];
+
+  // If the dataset provides a Drugs@FDA URL explicitly, it's safe to use.
+  // (Avoid using non-Drugs@FDA press-release pages here to prevent mismatches/changes.)
+  if (drug.fdaUrl && /accessdata\.fda\.gov\/scripts\/cder\/daf\/index\.cfm\?event=overview\.process&ApplNo=/.test(drug.fdaUrl)) {
+    return drug.fdaUrl;
   }
 
-  // If an explicit FDA URL is provided in the dataset, prefer it.
-  // (Many products have stable FDA pages outside Drugs@FDA: biosimilars pages, press releases, CBER pages, etc.)
-  if (drug.fdaUrl) return drug.fdaUrl;
-  
-  // Default: Drugs@FDA database lookup - works for NDA and most BLA products
+  // Default: Drugs@FDA database lookup - works for NDA and most CDER BLAs
   return `https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${drug.applicationNo}`;
 }
 
