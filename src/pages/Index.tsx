@@ -92,7 +92,7 @@ const Index = () => {
         <Filters data={data} filters={filters} onFilterChange={setFilters} />
         
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-8">
           <StatCard
             title="전체 승인"
             value={stats.total}
@@ -129,11 +129,18 @@ const Index = () => {
             variant="secondary"
           />
           <StatCard
-            title="BLA / NDA"
-            value={`${stats.blaCount} / ${stats.ndaCount}`}
-            subtitle={`BLA ${stats.total > 0 ? Math.round((stats.blaCount / stats.total) * 100) : 0}%`}
+            title="BLA"
+            value={stats.blaCount}
+            subtitle={`${stats.total > 0 ? Math.round((stats.blaCount / stats.total) * 100) : 0}% 생물의약품`}
             icon={Activity}
             variant="primary"
+          />
+          <StatCard
+            title="NDA"
+            value={stats.ndaCount}
+            subtitle={`${stats.total > 0 ? Math.round((stats.ndaCount / stats.total) * 100) : 0}% 화학의약품`}
+            icon={Pill}
+            variant="muted"
           />
         </div>
 
