@@ -19,6 +19,46 @@ export interface DrugApproval {
 }
 
 export const fdaApprovals: DrugApproval[] = [
+  // ===== 2026년 1월 승인 =====
+  {
+    approvalMonth: "2026-01",
+    approvalDate: "2026-01-27",
+    ndaBlaNumber: "BLA 761145",
+    applicationNo: "761145",
+    applicationType: "BLA",
+    brandName: "DARZALEX FASPRO",
+    activeIngredient: "daratumumab and hyaluronidase-fihj",
+    sponsor: "Janssen Biotech",
+    indicationFull: "자가 조혈모세포이식 부적격 신규 진단 다발골수종 성인 환자의 bortezomib, lenalidomide, dexamethasone (VRd) 병용요법",
+    therapeuticArea: "항암제 - 다발골수종",
+    isOncology: true,
+    isBiosimilar: false,
+    isNovelDrug: false,
+    isOrphanDrug: true,
+    approvalType: "정규승인",
+    notes: "변경승인 - 이식 부적격 NDMM VRd 병용요법 적응증 추가",
+    fdaUrl: "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-approves-daratumumab-and-hyaluronidase-fihj-bortezomib-lenalidomide-and-dexamethasone-newly",
+  },
+  {
+    approvalMonth: "2026-01",
+    approvalDate: "2026-01-12",
+    ndaBlaNumber: "BLA 761948",
+    applicationNo: "761948",
+    applicationType: "BLA",
+    brandName: "ZYCUBO",
+    activeIngredient: "copper histidinate",
+    sponsor: "Sentynl Therapeutics",
+    indicationFull: "Menkes disease 소아 환자의 구리 보충 치료",
+    therapeuticArea: "소아과 - 대사질환",
+    isOncology: false,
+    isBiosimilar: false,
+    isNovelDrug: true,
+    isOrphanDrug: true,
+    approvalType: "정규승인",
+    notes: "FDA 최초 승인 Menkes disease 치료제, Breakthrough Therapy 및 Rare Pediatric Disease 지정",
+    fdaUrl: "https://www.fda.gov/news-events/press-announcements/fda-approves-first-treatment-children-menkes-disease",
+  },
+  // ===== 2025년 12월 승인 =====
   {
     approvalMonth: "2025-12",
     approvalDate: "2025-12-05",
@@ -383,25 +423,26 @@ export const fdaApprovals: DrugApproval[] = [
 ];
 
 export const summaryStats = {
-  total: 19,
-  oncology: 8,
-  nonOncology: 11,
+  total: 21,
+  oncology: 9,
+  nonOncology: 12,
   biosimilar: 3,
-  novelDrug: 8,
+  novelDrug: 9,
   novelOncology: 0,
-  novelNonOncology: 8,
-  orphanDrug: 9,
-  orphanOncology: 5,
-  orphanNonOncology: 4,
+  novelNonOncology: 9,
+  orphanDrug: 11,
+  orphanOncology: 6,
+  orphanNonOncology: 5,
 };
 
 export const therapeuticAreaData = [
+  { name: "다발골수종", value: 2, category: "항암제" },
   { name: "림프종", value: 2, category: "항암제" },
   { name: "전립선암", value: 2, category: "항암제" },
-  { name: "다발골수종", value: 1, category: "항암제" },
   { name: "유방암", value: 1, category: "항암제" },
   { name: "폐암", value: 1, category: "항암제" },
   { name: "골전이", value: 1, category: "항암제" },
+  { name: "대사질환", value: 1, category: "소아과" },
   { name: "신경복구", value: 1, category: "신경과" },
   { name: "유전자치료", value: 1, category: "면역학" },
   { name: "부정맥", value: 1, category: "심장내과" },
@@ -416,17 +457,17 @@ export const therapeuticAreaData = [
 ];
 
 export const approvalTypeData = [
-  { name: "정규승인", value: 19 },
+  { name: "정규승인", value: 21 },
   { name: "신속승인", value: 0 },
 ];
 
 export const drugCategoryData = [
-  { name: "항암제", value: 8 },
-  { name: "비항암제", value: 11 },
+  { name: "항암제", value: 9 },
+  { name: "비항암제", value: 12 },
 ];
 
 export const specialDesignations = [
-  { name: "희귀의약품", value: 9, percentage: 47 },
-  { name: "신약", value: 8, percentage: 42 },
-  { name: "바이오시밀러", value: 3, percentage: 16 },
+  { name: "희귀의약품", value: 11, percentage: 52 },
+  { name: "신약", value: 9, percentage: 43 },
+  { name: "바이오시밀러", value: 3, percentage: 14 },
 ];
