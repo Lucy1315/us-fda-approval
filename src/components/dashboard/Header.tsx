@@ -33,7 +33,7 @@ export function Header({ onDataUpdate, dataCount }: HeaderProps) {
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="h-4 w-4" />
-              <span>수집일: <strong className="text-foreground">2026-01-14</strong></span>
+              <span>수집일: <strong className="text-foreground">2026-01-28</strong></span>
             </div>
           </div>
           <ExcelUpload onDataUpdate={onDataUpdate} />
