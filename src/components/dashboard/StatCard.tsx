@@ -6,7 +6,7 @@ interface StatCardProps {
   value: number | string;
   subtitle?: string;
   icon: LucideIcon;
-  variant?: "primary" | "secondary" | "accent" | "muted";
+  variant?: "primary" | "secondary" | "accent" | "muted" | "orphan" | "biosimilar" | "novel" | "nda";
 }
 
 const variantStyles = {
@@ -14,6 +14,10 @@ const variantStyles = {
   secondary: "bg-secondary/20 text-secondary",
   accent: "bg-accent/10 text-accent",
   muted: "bg-muted text-muted-foreground",
+  orphan: "bg-amber-100 text-amber-600",
+  biosimilar: "bg-emerald-100 text-emerald-600",
+  novel: "bg-violet-100 text-violet-600",
+  nda: "bg-sky-100 text-sky-600",
 };
 
 export function StatCard({ title, value, subtitle, icon: Icon, variant = "primary" }: StatCardProps) {

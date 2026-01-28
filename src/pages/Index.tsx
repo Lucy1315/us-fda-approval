@@ -114,21 +114,21 @@ const Index = () => {
             value={stats.novelDrug}
             subtitle={`항암제 ${stats.novelOncology} / 비항암제 ${stats.novelNonOncology}`}
             icon={Star}
-            variant="secondary"
+            variant="novel"
           />
           <StatCard
             title="희귀의약품"
             value={stats.orphanDrug}
             subtitle="Orphan Drug"
             icon={Microscope}
-            variant="muted"
+            variant="orphan"
           />
           <StatCard
             title="바이오시밀러"
             value={stats.biosimilar}
             subtitle="Biosimilar"
             icon={Syringe}
-            variant="secondary"
+            variant="biosimilar"
           />
           <StatCard
             title="BLA"
@@ -142,7 +142,7 @@ const Index = () => {
             value={stats.ndaCount}
             subtitle={`${stats.total > 0 ? Math.round((stats.ndaCount / stats.total) * 100) : 0}% 화학의약품`}
             icon={Pill}
-            variant="muted"
+            variant="nda"
           />
         </div>
 
