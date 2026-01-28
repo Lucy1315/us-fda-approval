@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Download, FileSpreadsheet, Loader2, Calendar, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,287 +10,156 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { DrugApproval } from "@/data/fdaData";
+import { format, startOfMonth, endOfMonth, subMonths, isWithinInterval, parseISO } from "date-fns";
+import { ko } from "date-fns/locale";
 import ExcelJS from "exceljs";
+import { cn } from "@/lib/utils";
 
-// 2026년 1월 US FDA NDA/BLA 신약 전문의약품 (최초승인 또는 변경승인)
-// CSV 데이터에서 NDA/BLA의 ORIG-1 또는 Type 1 NME 추출
-const januaryNovelDrugs = [
-  {
-    approvalDate: "2026-01-12",
-    brandName: "ZYCUBO",
-    activeIngredient: "copper histidinate",
-    ndaBlaNumber: "NDA 211241",
-    sponsor: "Sentynl Therapeutics",
-    approvalCategory: "최초승인",
-    approvalCategoryEn: "Original Approval (Type 1 - New Molecular Entity)",
-    summaryKr: "Menkes disease 소아 환자의 구리 보충 치료제. FDA 최초 승인 Menkes disease 치료제로 Breakthrough Therapy 및 Rare Pediatric Disease 지정.",
-    summaryEn: "Copper supplementation therapy for pediatric patients with Menkes disease. First FDA-approved treatment for Menkes disease with Breakthrough Therapy and Rare Pediatric Disease designations.",
-    therapeuticArea: "소아과 - 대사질환",
-    therapeuticAreaEn: "Pediatrics - Metabolic Diseases",
-    isNovelDrug: true,
-    isOrphanDrug: true,
-  },
-  {
-    approvalDate: "2026-01-15",
-    brandName: "FILKRI",
-    activeIngredient: "filgrastim-laha",
-    ndaBlaNumber: "BLA 761027",
-    sponsor: "Accord Biopharma",
-    approvalCategory: "최초승인",
-    approvalCategoryEn: "Original Approval (Biosimilar)",
-    summaryKr: "호중구감소증 치료를 위한 filgrastim 바이오시밀러. Neupogen 바이오시밀러 제품.",
-    summaryEn: "Filgrastim biosimilar for treatment of neutropenia. Biosimilar to Neupogen.",
-    therapeuticArea: "혈액종양내과",
-    therapeuticAreaEn: "Hematology/Oncology",
-    isNovelDrug: false,
-    isOrphanDrug: false,
-  },
-  {
-    approvalDate: "2026-01-21",
-    brandName: "AVTOZMA",
-    activeIngredient: "tocilizumab-anoh",
-    ndaBlaNumber: "BLA 761498",
-    sponsor: "Celltrion",
-    approvalCategory: "최초승인",
-    approvalCategoryEn: "Original Approval (Biosimilar)",
-    summaryKr: "류마티스 관절염, 전신형 소아 특발성 관절염, 사이토카인 방출 증후군 치료를 위한 tocilizumab 바이오시밀러. Actemra 바이오시밀러 제품.",
-    summaryEn: "Tocilizumab biosimilar for rheumatoid arthritis, systemic juvenile idiopathic arthritis, and cytokine release syndrome. Biosimilar to Actemra.",
-    therapeuticArea: "류마티스내과",
-    therapeuticAreaEn: "Rheumatology",
-    isNovelDrug: false,
-    isOrphanDrug: false,
-  },
-  {
-    approvalDate: "2026-01-26",
-    brandName: "QUIOFIC",
-    activeIngredient: "folic acid",
-    ndaBlaNumber: "NDA 216395",
-    sponsor: "CMP Development",
-    approvalCategory: "최초승인",
-    approvalCategoryEn: "Original Approval (Type 3 - New Dosage Form)",
-    summaryKr: "엽산 결핍 치료를 위한 새로운 제형. Type 3 신규 제형 승인.",
-    summaryEn: "New dosage form for treatment of folic acid deficiency. Type 3 - New Dosage Form approval.",
-    therapeuticArea: "내과 - 영양결핍",
-    therapeuticAreaEn: "Internal Medicine - Nutritional Deficiency",
-    isNovelDrug: false,
-    isOrphanDrug: false,
-  },
-];
+interface FdaNovelDrugsExportProps {
+  data: DrugApproval[];
+  filteredData: DrugApproval[];
+}
 
-// 주요 NDA/BLA 변경승인 (SUPPL) 중 중요한 건
-const januaryMajorSupplements = [
-  {
-    approvalDate: "2026-01-07",
-    brandName: "YESINTEK",
-    activeIngredient: "ustekinumab-kfce",
-    ndaBlaNumber: "BLA 761406",
-    sponsor: "Biocon Biologics",
-    approvalCategory: "변경승인",
-    approvalCategoryEn: "Supplemental Approval",
-    summaryKr: "크론병, 궤양성 대장염, 건선, 건선성 관절염 치료를 위한 ustekinumab 바이오시밀러 보충신청 승인.",
-    summaryEn: "Supplemental approval for ustekinumab biosimilar for Crohn's disease, ulcerative colitis, psoriasis, and psoriatic arthritis.",
-    therapeuticArea: "소화기내과/류마티스내과",
-    therapeuticAreaEn: "Gastroenterology/Rheumatology",
-    isNovelDrug: false,
-    isOrphanDrug: false,
-  },
-  {
-    approvalDate: "2026-01-08",
-    brandName: "ENSACOVE",
-    activeIngredient: "ensartinib hydrochloride",
-    ndaBlaNumber: "NDA 218171",
-    sponsor: "Xcovery",
-    approvalCategory: "변경승인",
-    approvalCategoryEn: "Supplemental Approval (Labeling)",
-    summaryKr: "ALK 양성 비소세포폐암 치료를 위한 ensartinib 라벨링 변경승인.",
-    summaryEn: "Labeling supplement approval for ensartinib for ALK-positive non-small cell lung cancer.",
-    therapeuticArea: "항암제 - 폐암",
-    therapeuticAreaEn: "Oncology - Lung Cancer",
-    isNovelDrug: false,
-    isOrphanDrug: false,
-  },
-  {
-    approvalDate: "2026-01-13",
-    brandName: "YESAFILI",
-    activeIngredient: "aflibercept-jbvf",
-    ndaBlaNumber: "BLA 761274",
-    sponsor: "Biocon Biologics",
-    approvalCategory: "변경승인",
-    approvalCategoryEn: "Supplemental Approval",
-    summaryKr: "황반변성, 당뇨망막병증, 황반부종 치료를 위한 aflibercept 바이오시밀러 보충신청 승인.",
-    summaryEn: "Supplemental approval for aflibercept biosimilar for macular degeneration, diabetic retinopathy, and macular edema.",
-    therapeuticArea: "안과",
-    therapeuticAreaEn: "Ophthalmology",
-    isNovelDrug: false,
-    isOrphanDrug: false,
-  },
-  {
-    approvalDate: "2026-01-14",
-    brandName: "AVTOZMA",
-    activeIngredient: "tocilizumab-anoh",
-    ndaBlaNumber: "BLA 761420",
-    sponsor: "Celltrion",
-    approvalCategory: "변경승인",
-    approvalCategoryEn: "Supplemental Approval",
-    summaryKr: "류마티스 관절염, 소아 특발성 관절염 치료를 위한 tocilizumab 바이오시밀러 보충신청 승인.",
-    summaryEn: "Supplemental approval for tocilizumab biosimilar for rheumatoid arthritis and juvenile idiopathic arthritis.",
-    therapeuticArea: "류마티스내과",
-    therapeuticAreaEn: "Rheumatology",
-    isNovelDrug: false,
-    isOrphanDrug: false,
-  },
-  {
-    approvalDate: "2026-01-15",
-    brandName: "OTULFI",
-    activeIngredient: "ustekinumab-aauz",
-    ndaBlaNumber: "BLA 761379",
-    sponsor: "Fresenius Kabi",
-    approvalCategory: "변경승인",
-    approvalCategoryEn: "Supplemental Approval",
-    summaryKr: "건선, 건선성 관절염, 크론병, 궤양성 대장염 치료를 위한 ustekinumab 바이오시밀러 보충신청 승인.",
-    summaryEn: "Supplemental approval for ustekinumab biosimilar for psoriasis, psoriatic arthritis, Crohn's disease, and ulcerative colitis.",
-    therapeuticArea: "피부과/소화기내과",
-    therapeuticAreaEn: "Dermatology/Gastroenterology",
-    isNovelDrug: false,
-    isOrphanDrug: false,
-  },
-  {
-    approvalDate: "2026-01-16",
-    brandName: "ZYNLONTA",
-    activeIngredient: "loncastuximab tesirine-lpyl",
-    ndaBlaNumber: "BLA 761196",
-    sponsor: "ADC Therapeutics",
-    approvalCategory: "변경승인",
-    approvalCategoryEn: "Supplemental Approval",
-    summaryKr: "재발성 또는 불응성 미만성 거대 B세포 림프종 치료를 위한 loncastuximab tesirine 보충신청 승인.",
-    summaryEn: "Supplemental approval for loncastuximab tesirine for relapsed or refractory diffuse large B-cell lymphoma.",
-    therapeuticArea: "항암제 - 림프종",
-    therapeuticAreaEn: "Oncology - Lymphoma",
-    isNovelDrug: false,
-    isOrphanDrug: true,
-  },
-  {
-    approvalDate: "2026-01-16",
-    brandName: "BRIUMVI",
-    activeIngredient: "ublituximab-xiiy",
-    ndaBlaNumber: "BLA 761238",
-    sponsor: "TG Therapeutics",
-    approvalCategory: "변경승인",
-    approvalCategoryEn: "Supplemental Approval",
-    summaryKr: "재발형 다발성 경화증 치료를 위한 ublituximab 보충신청 승인.",
-    summaryEn: "Supplemental approval for ublituximab for relapsing forms of multiple sclerosis.",
-    therapeuticArea: "신경과 - 다발성 경화증",
-    therapeuticAreaEn: "Neurology - Multiple Sclerosis",
-    isNovelDrug: false,
-    isOrphanDrug: false,
-  },
-  {
-    approvalDate: "2026-01-16",
-    brandName: "LEQEMBI",
-    activeIngredient: "lecanemab-irmb",
-    ndaBlaNumber: "BLA 761269",
-    sponsor: "Eisai",
-    approvalCategory: "변경승인",
-    approvalCategoryEn: "Supplemental Approval",
-    summaryKr: "초기 알츠하이머병 치료를 위한 lecanemab 보충신청 승인.",
-    summaryEn: "Supplemental approval for lecanemab for early Alzheimer's disease.",
-    therapeuticArea: "신경과 - 알츠하이머병",
-    therapeuticAreaEn: "Neurology - Alzheimer's Disease",
-    isNovelDrug: false,
-    isOrphanDrug: false,
-  },
-  {
-    approvalDate: "2026-01-21",
-    brandName: "TYENNE",
-    activeIngredient: "tocilizumab-aazg",
-    ndaBlaNumber: "BLA 761275",
-    sponsor: "Fresenius Kabi",
-    approvalCategory: "변경승인",
-    approvalCategoryEn: "Supplemental Approval",
-    summaryKr: "류마티스 관절염, 거대세포 동맥염, 사이토카인 방출 증후군 치료를 위한 tocilizumab 바이오시밀러 보충신청 승인.",
-    summaryEn: "Supplemental approval for tocilizumab biosimilar for rheumatoid arthritis, giant cell arteritis, and cytokine release syndrome.",
-    therapeuticArea: "류마티스내과",
-    therapeuticAreaEn: "Rheumatology",
-    isNovelDrug: false,
-    isOrphanDrug: false,
-  },
-  {
-    approvalDate: "2026-01-21",
-    brandName: "VERQUVO",
-    activeIngredient: "vericiguat",
-    ndaBlaNumber: "NDA 214377",
-    sponsor: "MSD",
-    approvalCategory: "변경승인",
-    approvalCategoryEn: "Supplemental Approval (Efficacy)",
-    summaryKr: "만성 심부전 치료를 위한 vericiguat 효능 변경승인.",
-    summaryEn: "Efficacy supplement approval for vericiguat for chronic heart failure.",
-    therapeuticArea: "심장내과 - 심부전",
-    therapeuticAreaEn: "Cardiology - Heart Failure",
-    isNovelDrug: false,
-    isOrphanDrug: false,
-  },
-  {
-    approvalDate: "2026-01-23",
-    brandName: "EPYSQLI",
-    activeIngredient: "eculizumab-aagh",
-    ndaBlaNumber: "BLA 761340",
-    sponsor: "Samsung Bioepis",
-    approvalCategory: "변경승인",
-    approvalCategoryEn: "Supplemental Approval",
-    summaryKr: "발작성 야간 혈색소뇨증, 비정형 용혈성 요독증후군 치료를 위한 eculizumab 바이오시밀러 보충신청 승인.",
-    summaryEn: "Supplemental approval for eculizumab biosimilar for paroxysmal nocturnal hemoglobinuria and atypical hemolytic uremic syndrome.",
-    therapeuticArea: "혈액내과",
-    therapeuticAreaEn: "Hematology",
-    isNovelDrug: false,
-    isOrphanDrug: true,
-  },
-  {
-    approvalDate: "2026-01-23",
-    brandName: "JOURNAVX",
-    activeIngredient: "suzetrigine",
-    ndaBlaNumber: "NDA 219209",
-    sponsor: "Vertex Pharmaceuticals",
-    approvalCategory: "변경승인",
-    approvalCategoryEn: "Supplemental Approval (Labeling)",
-    summaryKr: "중등도 내지 중증 급성 통증 치료를 위한 suzetrigine 라벨링 변경승인. 비오피오이드 진통제.",
-    summaryEn: "Labeling supplement approval for suzetrigine for moderate to severe acute pain. Non-opioid analgesic.",
-    therapeuticArea: "통증의학과",
-    therapeuticAreaEn: "Pain Medicine",
-    isNovelDrug: false,
-    isOrphanDrug: false,
-  },
-];
+type ExportMode = "all" | "filtered" | "custom";
 
-// 전체 데이터 합치기
-const allJanuaryDrugs = [...januaryNovelDrugs, ...januaryMajorSupplements];
-
-export function FdaNovelDrugsExport() {
+export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [exportMode, setExportMode] = useState<ExportMode>("filtered");
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(startOfMonth(subMonths(new Date(), 1)));
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(endOfMonth(subMonths(new Date(), 1)));
   const { toast } = useToast();
 
+  // 내보내기 대상 데이터 계산
+  const exportData = useMemo(() => {
+    switch (exportMode) {
+      case "all":
+        return data;
+      case "filtered":
+        return filteredData;
+      case "custom":
+        if (!customStartDate || !customEndDate) return [];
+        return data.filter((drug) => {
+          const approvalDate = parseISO(drug.approvalDate);
+          return isWithinInterval(approvalDate, { start: customStartDate, end: customEndDate });
+        });
+      default:
+        return filteredData;
+    }
+  }, [exportMode, data, filteredData, customStartDate, customEndDate]);
+
+  // 통계 계산
+  const stats = useMemo(() => {
+    const total = exportData.length;
+    const oncologyCount = exportData.filter(d => d.isOncology).length;
+    const nonOncologyCount = total - oncologyCount;
+    const biosimilarCount = exportData.filter(d => d.isBiosimilar).length;
+    const novelDrugCount = exportData.filter(d => d.isNovelDrug).length;
+    const orphanDrugCount = exportData.filter(d => d.isOrphanDrug).length;
+    
+    return { total, oncologyCount, nonOncologyCount, biosimilarCount, novelDrugCount, orphanDrugCount };
+  }, [exportData]);
+
+  // 기간 표시 텍스트
+  const periodText = useMemo(() => {
+    if (exportData.length === 0) return "데이터 없음";
+    const dates = exportData.map(d => parseISO(d.approvalDate)).sort((a, b) => a.getTime() - b.getTime());
+    const minDate = format(dates[0], "yyyy-MM-dd");
+    const maxDate = format(dates[dates.length - 1], "yyyy-MM-dd");
+    return `${minDate} ~ ${maxDate}`;
+  }, [exportData]);
+
+  // 색상 범례를 시트에 추가하는 함수
+  const addColorLegend = (sheet: ExcelJS.Worksheet, startRow: number) => {
+    const sectionHeaderStyle: Partial<ExcelJS.Fill> = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFF3F4F6" },
+    };
+
+    let rowNum = startRow;
+    rowNum++; // 빈 줄
+
+    const legendHeaderRow = sheet.getRow(rowNum);
+    legendHeaderRow.getCell(1).value = "🎨 색상 범례";
+    legendHeaderRow.getCell(1).font = { bold: true, size: 11 };
+    legendHeaderRow.fill = sectionHeaderStyle as ExcelJS.Fill;
+    sheet.mergeCells(`A${rowNum}:B${rowNum}`);
+    rowNum++;
+
+    const legendOrange = sheet.getRow(rowNum);
+    legendOrange.getCell(1).value = "🟠 주황색";
+    legendOrange.getCell(2).value = "항암제";
+    legendOrange.getCell(2).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFFED7AA" },
+    };
+    rowNum++;
+
+    const legendGreen = sheet.getRow(rowNum);
+    legendGreen.getCell(1).value = "🟢 연두색";
+    legendGreen.getCell(2).value = "바이오시밀러";
+    legendGreen.getCell(2).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFBBF7D0" },
+    };
+    rowNum++;
+
+    const legendWhite = sheet.getRow(rowNum);
+    legendWhite.getCell(1).value = "⬜ 색상 없음";
+    legendWhite.getCell(2).value = "비항암제 (바이오시밀러 제외)";
+
+    return rowNum;
+  };
+
+  // 데이터 행에 색상 적용
+  const applyRowColor = (row: ExcelJS.Row, drug: DrugApproval, columns: number) => {
+    if (drug.isOncology) {
+      for (let i = 1; i <= columns; i++) {
+        row.getCell(i).fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFFED7AA" },
+        };
+      }
+    } else if (drug.isBiosimilar) {
+      for (let i = 1; i <= columns; i++) {
+        row.getCell(i).fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFBBF7D0" },
+        };
+      }
+    }
+  };
+
   const generateExcel = async () => {
+    if (exportData.length === 0) {
+      toast({
+        title: "내보내기 실패",
+        description: "내보낼 데이터가 없습니다. 필터 조건을 확인해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const workbook = new ExcelJS.Workbook();
       workbook.creator = "FDA Drug Approval Dashboard";
       workbook.created = new Date();
 
-      // 통계 계산
-      const total = allJanuaryDrugs.length;
-      const oncologyDrugs = allJanuaryDrugs.filter(d => d.therapeuticArea.includes("항암제"));
-      const oncologyCount = oncologyDrugs.length;
-      const nonOncologyCount = total - oncologyCount;
-      const biosimilarCount = allJanuaryDrugs.filter(d => 
-        d.approvalCategoryEn.includes("Biosimilar") || d.therapeuticArea.includes("바이오시밀러")
-      ).length;
-      const novelDrugCount = allJanuaryDrugs.filter(d => d.isNovelDrug).length;
-      const orphanDrugCount = allJanuaryDrugs.filter(d => d.isOrphanDrug).length;
-
       // 치료영역별 분포 계산
       const therapeuticAreaMap = new Map<string, number>();
-      allJanuaryDrugs.forEach(drug => {
+      exportData.forEach(drug => {
         const area = drug.therapeuticArea;
         therapeuticAreaMap.set(area, (therapeuticAreaMap.get(area) || 0) + 1);
       });
@@ -304,11 +173,6 @@ export function FdaNovelDrugsExport() {
         { key: "B", width: 55 },
       ];
 
-      // 스타일 정의
-      const headerStyle: Partial<ExcelJS.Style> = {
-        font: { bold: true, size: 14, color: { argb: "FF1E40AF" } },
-        alignment: { vertical: "middle" },
-      };
       const sectionHeaderStyle: Partial<ExcelJS.Fill> = {
         type: "pattern",
         pattern: "solid",
@@ -323,20 +187,20 @@ export function FdaNovelDrugsExport() {
 
       // 타이틀
       const titleRow = summarySheet.getRow(rowNum);
-      titleRow.getCell(1).value = "✅ 2026년 1월 FDA 전문의약품 승인 현황";
+      titleRow.getCell(1).value = "✅ US FDA 전문의약품 승인 현황";
       titleRow.getCell(1).font = { bold: true, size: 16, color: { argb: "FF1E40AF" } };
       summarySheet.mergeCells(`A${rowNum}:B${rowNum}`);
       rowNum += 2;
 
       // 기본 정보
-      summarySheet.getRow(rowNum).getCell(1).value = "📅 대상 월";
-      summarySheet.getRow(rowNum).getCell(2).value = "2026-01";
+      summarySheet.getRow(rowNum).getCell(1).value = "📅 대상 기간";
+      summarySheet.getRow(rowNum).getCell(2).value = periodText;
       rowNum++;
       summarySheet.getRow(rowNum).getCell(1).value = "🗓️ 데이터 수집일";
-      summarySheet.getRow(rowNum).getCell(2).value = "2026-01-28";
+      summarySheet.getRow(rowNum).getCell(2).value = format(new Date(), "yyyy-MM-dd");
       rowNum++;
       summarySheet.getRow(rowNum).getCell(1).value = "🔗 데이터 출처";
-      summarySheet.getRow(rowNum).getCell(2).value = "FDA Official + Drugs.com + DrugsFDA CSV";
+      summarySheet.getRow(rowNum).getCell(2).value = "FDA Official + Drugs.com + ASCO Post";
       rowNum += 2;
 
       // 승인 현황
@@ -353,32 +217,32 @@ export function FdaNovelDrugsExport() {
       rowNum++;
 
       summarySheet.getRow(rowNum).getCell(1).value = "전체 승인";
-      summarySheet.getRow(rowNum).getCell(2).value = total;
+      summarySheet.getRow(rowNum).getCell(2).value = stats.total;
       summarySheet.getRow(rowNum).getCell(2).font = valueStyle;
       rowNum++;
 
       summarySheet.getRow(rowNum).getCell(1).value = "├─ 항암제";
-      summarySheet.getRow(rowNum).getCell(2).value = oncologyCount;
+      summarySheet.getRow(rowNum).getCell(2).value = stats.oncologyCount;
       summarySheet.getRow(rowNum).getCell(2).font = valueStyle;
       rowNum++;
 
       summarySheet.getRow(rowNum).getCell(1).value = "└─ 비항암제";
-      summarySheet.getRow(rowNum).getCell(2).value = nonOncologyCount;
+      summarySheet.getRow(rowNum).getCell(2).value = stats.nonOncologyCount;
       summarySheet.getRow(rowNum).getCell(2).font = valueStyle;
       rowNum += 2;
 
       summarySheet.getRow(rowNum).getCell(1).value = "바이오시밀러";
-      summarySheet.getRow(rowNum).getCell(2).value = biosimilarCount;
+      summarySheet.getRow(rowNum).getCell(2).value = stats.biosimilarCount;
       summarySheet.getRow(rowNum).getCell(2).font = valueStyle;
       rowNum++;
 
       summarySheet.getRow(rowNum).getCell(1).value = "신약 (Novel Drug)";
-      summarySheet.getRow(rowNum).getCell(2).value = novelDrugCount;
+      summarySheet.getRow(rowNum).getCell(2).value = stats.novelDrugCount;
       summarySheet.getRow(rowNum).getCell(2).font = valueStyle;
       rowNum++;
 
       summarySheet.getRow(rowNum).getCell(1).value = "희귀의약품 (Orphan Drug)";
-      summarySheet.getRow(rowNum).getCell(2).value = orphanDrugCount;
+      summarySheet.getRow(rowNum).getCell(2).value = stats.orphanDrugCount;
       summarySheet.getRow(rowNum).getCell(2).font = valueStyle;
       rowNum += 2;
 
@@ -410,21 +274,18 @@ export function FdaNovelDrugsExport() {
       summarySheet.getRow(rowNum).font = { bold: true };
       rowNum++;
 
-      allJanuaryDrugs.forEach(drug => {
+      exportData.forEach(drug => {
         const drugRow = summarySheet.getRow(rowNum);
         drugRow.getCell(1).value = `• ${drug.brandName}`;
         drugRow.getCell(2).value = drug.therapeuticArea;
         
-        // 항암제 주황색 배경
-        if (drug.therapeuticArea.includes("항암제")) {
+        if (drug.isOncology) {
           drugRow.getCell(2).fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFED7AA" },
           };
-        }
-        // 바이오시밀러 연두색 배경
-        if (drug.approvalCategoryEn.includes("Biosimilar")) {
+        } else if (drug.isBiosimilar) {
           drugRow.getCell(2).fill = {
             type: "pattern",
             pattern: "solid",
@@ -444,63 +305,43 @@ export function FdaNovelDrugsExport() {
       rowNum++;
 
       const sources = [
-        ["FDA Novel Drug Approvals 2026", "https://www.fda.gov/drugs/novel-drug-approvals-fda/novel-drug-approvals-2026"],
+        ["FDA Novel Drug Approvals", "https://www.fda.gov/drugs/novel-drug-approvals-fda/novel-drug-approvals-2025"],
         ["Drugs.com New Approvals", "https://www.drugs.com/newdrugs.html"],
         ["FDA Drugs@FDA Database", "https://www.accessdata.fda.gov/scripts/cder/daf/"],
-        ["DrugsFDA CSV Data", "FDA Official DrugsFDA_FDA-Approved_Drugs CSV"],
+        ["ASCO Post", "https://ascopost.com"],
       ];
       sources.forEach(([name, url]) => {
         summarySheet.getRow(rowNum).getCell(1).value = name;
         summarySheet.getRow(rowNum).getCell(2).value = url;
         rowNum++;
       });
-      rowNum++;
 
-      // 색상 범례
-      const legendHeaderRow = summarySheet.getRow(rowNum);
-      legendHeaderRow.getCell(1).value = "🎨 색상 범례";
-      legendHeaderRow.getCell(1).font = { bold: true, size: 12 };
-      legendHeaderRow.fill = sectionHeaderStyle as ExcelJS.Fill;
-      summarySheet.mergeCells(`A${rowNum}:B${rowNum}`);
-      rowNum++;
+      // 색상 범례 추가
+      addColorLegend(summarySheet, rowNum);
 
-      const legendOrange = summarySheet.getRow(rowNum);
-      legendOrange.getCell(1).value = "🟠 주황색";
-      legendOrange.getCell(2).value = "항암제";
-      legendOrange.getCell(2).fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFFED7AA" },
-      };
-      rowNum++;
-
-      const legendGreen = summarySheet.getRow(rowNum);
-      legendGreen.getCell(1).value = "🟢 연두색";
-      legendGreen.getCell(2).value = "바이오시밀러";
-      legendGreen.getCell(2).fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFBBF7D0" },
-      };
-      rowNum++;
-
-      const legendWhite = summarySheet.getRow(rowNum);
-      legendWhite.getCell(1).value = "⬜ 색상 없음";
-      legendWhite.getCell(2).value = "비항암제 (바이오시밀러 제외)";
-
-      // Sheet 2: 국문 상세
+      // ===== Sheet 2: 국문 상세 =====
       const krSheet = workbook.addWorksheet("국문 상세");
       
-      krSheet.columns = [
+      const krColumns = [
+        { header: "승인월", key: "approvalMonth", width: 12 },
         { header: "승인일", key: "approvalDate", width: 12 },
-        { header: "제품명", key: "brandName", width: 18 },
-        { header: "성분명", key: "activeIngredient", width: 28 },
-        { header: "NDA/BLA 번호", key: "ndaBlaNumber", width: 15 },
+        { header: "NDA/BLA번호", key: "applicationNo", width: 15 },
+        { header: "신청유형", key: "applicationType", width: 10 },
+        { header: "제품명", key: "productName", width: 20 },
+        { header: "주성분", key: "activeIngredient", width: 30 },
         { header: "제약사", key: "sponsor", width: 22 },
-        { header: "승인유형", key: "approvalCategory", width: 12 },
+        { header: "적응증", key: "indication", width: 60 },
         { header: "치료영역", key: "therapeuticArea", width: 25 },
-        { header: "요약 (국문)", key: "summaryKr", width: 80 },
+        { header: "항암제", key: "isOncology", width: 8 },
+        { header: "바이오시밀러", key: "isBiosimilar", width: 12 },
+        { header: "신약", key: "isNovelDrug", width: 8 },
+        { header: "희귀의약품", key: "isOrphanDrug", width: 12 },
+        { header: "승인유형", key: "approvalType", width: 12 },
+        { header: "비고", key: "notes", width: 40 },
+        { header: "FDA승인페이지", key: "fdaUrl", width: 50 },
       ];
+      
+      krSheet.columns = krColumns;
 
       krSheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
       krSheet.getRow(1).fill = {
@@ -510,26 +351,58 @@ export function FdaNovelDrugsExport() {
       };
       krSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
-      allJanuaryDrugs.forEach((drug) => {
-        krSheet.addRow(drug);
+      exportData.forEach((drug) => {
+        const approvalMonth = drug.approvalDate.substring(0, 7);
+        const row = krSheet.addRow({
+          approvalMonth,
+          approvalDate: drug.approvalDate,
+          applicationNo: `${drug.applicationType} ${drug.applicationNo}`,
+          applicationType: drug.applicationType,
+          productName: drug.brandName,
+          activeIngredient: drug.activeIngredient,
+          sponsor: drug.sponsor,
+          indication: drug.indicationFull,
+          therapeuticArea: drug.therapeuticArea,
+          isOncology: drug.isOncology ? "Y" : "N",
+          isBiosimilar: drug.isBiosimilar ? "Y" : "N",
+          isNovelDrug: drug.isNovelDrug ? "Y" : "N",
+          isOrphanDrug: drug.isOrphanDrug ? "Y" : "N",
+          approvalType: drug.approvalType,
+          notes: drug.notes || "",
+          fdaUrl: drug.fdaUrl || "",
+        });
+        applyRowColor(row, drug, krColumns.length);
       });
 
-      // 텍스트 줄바꿈
-      krSheet.getColumn("summaryKr").alignment = { wrapText: true };
+      krSheet.getColumn("indication").alignment = { wrapText: true };
+      krSheet.getColumn("notes").alignment = { wrapText: true };
 
-      // Sheet 3: 영문 상세
+      // 국문 시트에 색상 범례 추가
+      addColorLegend(krSheet, exportData.length + 3);
+
+      // ===== Sheet 3: 영문 상세 =====
       const enSheet = workbook.addWorksheet("English Details");
       
-      enSheet.columns = [
+      const enColumns = [
+        { header: "Approval Month", key: "approvalMonth", width: 14 },
         { header: "Approval Date", key: "approvalDate", width: 14 },
-        { header: "Brand Name", key: "brandName", width: 18 },
-        { header: "Active Ingredient", key: "activeIngredient", width: 28 },
-        { header: "NDA/BLA Number", key: "ndaBlaNumber", width: 15 },
+        { header: "NDA/BLA Number", key: "applicationNo", width: 15 },
+        { header: "Type", key: "applicationType", width: 8 },
+        { header: "Brand Name", key: "productName", width: 20 },
+        { header: "Active Ingredient", key: "activeIngredient", width: 30 },
         { header: "Sponsor", key: "sponsor", width: 22 },
-        { header: "Approval Type", key: "approvalCategoryEn", width: 42 },
-        { header: "Therapeutic Area", key: "therapeuticAreaEn", width: 35 },
-        { header: "Summary (English)", key: "summaryEn", width: 80 },
+        { header: "Indication", key: "indication", width: 60 },
+        { header: "Therapeutic Area", key: "therapeuticArea", width: 25 },
+        { header: "Oncology", key: "isOncology", width: 10 },
+        { header: "Biosimilar", key: "isBiosimilar", width: 10 },
+        { header: "Novel Drug", key: "isNovelDrug", width: 12 },
+        { header: "Orphan Drug", key: "isOrphanDrug", width: 12 },
+        { header: "Approval Type", key: "approvalType", width: 15 },
+        { header: "Notes", key: "notes", width: 40 },
+        { header: "FDA URL", key: "fdaUrl", width: 50 },
       ];
+
+      enSheet.columns = enColumns;
 
       enSheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
       enSheet.getRow(1).fill = {
@@ -539,69 +412,44 @@ export function FdaNovelDrugsExport() {
       };
       enSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
-      allJanuaryDrugs.forEach((drug) => {
-        enSheet.addRow(drug);
+      exportData.forEach((drug) => {
+        const approvalMonth = drug.approvalDate.substring(0, 7);
+        const row = enSheet.addRow({
+          approvalMonth,
+          approvalDate: drug.approvalDate,
+          applicationNo: `${drug.applicationType} ${drug.applicationNo}`,
+          applicationType: drug.applicationType,
+          productName: drug.brandName,
+          activeIngredient: drug.activeIngredient,
+          sponsor: drug.sponsor,
+          indication: drug.indicationFull,
+          therapeuticArea: drug.therapeuticArea,
+          isOncology: drug.isOncology ? "Y" : "N",
+          isBiosimilar: drug.isBiosimilar ? "Y" : "N",
+          isNovelDrug: drug.isNovelDrug ? "Y" : "N",
+          isOrphanDrug: drug.isOrphanDrug ? "Y" : "N",
+          approvalType: drug.approvalType,
+          notes: drug.notes || "",
+          fdaUrl: drug.fdaUrl || "",
+        });
+        applyRowColor(row, drug, enColumns.length);
       });
 
-      enSheet.getColumn("summaryEn").alignment = { wrapText: true };
+      enSheet.getColumn("indication").alignment = { wrapText: true };
+      enSheet.getColumn("notes").alignment = { wrapText: true };
 
-      // Sheet 4: 최초승인만
-      const origSheet = workbook.addWorksheet("최초승인 (ORIG-1)");
-      
-      origSheet.columns = [
-        { header: "승인일", key: "approvalDate", width: 12 },
-        { header: "제품명", key: "brandName", width: 18 },
-        { header: "성분명", key: "activeIngredient", width: 28 },
-        { header: "NDA/BLA 번호", key: "ndaBlaNumber", width: 15 },
-        { header: "제약사", key: "sponsor", width: 22 },
-        { header: "승인유형", key: "approvalCategoryEn", width: 45 },
-        { header: "요약 (국문)", key: "summaryKr", width: 60 },
-        { header: "Summary (English)", key: "summaryEn", width: 60 },
-      ];
+      // 영문 시트에 색상 범례 추가
+      addColorLegend(enSheet, exportData.length + 3);
 
-      origSheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
-      origSheet.getRow(1).fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFDC2626" },
-      };
-      origSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
-
-      januaryNovelDrugs.forEach((drug) => {
-        origSheet.addRow(drug);
-      });
-
-      origSheet.getColumn("summaryKr").alignment = { wrapText: true };
-      origSheet.getColumn("summaryEn").alignment = { wrapText: true };
-
-      // Sheet 5: 변경승인
-      const supplSheet = workbook.addWorksheet("변경승인 (SUPPL)");
-      
-      supplSheet.columns = [
-        { header: "승인일", key: "approvalDate", width: 12 },
-        { header: "제품명", key: "brandName", width: 18 },
-        { header: "성분명", key: "activeIngredient", width: 28 },
-        { header: "NDA/BLA 번호", key: "ndaBlaNumber", width: 15 },
-        { header: "제약사", key: "sponsor", width: 22 },
-        { header: "승인유형", key: "approvalCategoryEn", width: 35 },
-        { header: "요약 (국문)", key: "summaryKr", width: 60 },
-        { header: "Summary (English)", key: "summaryEn", width: 60 },
-      ];
-
-      supplSheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
-      supplSheet.getRow(1).fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFF59E0B" },
-      };
-      supplSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
-
-      januaryMajorSupplements.forEach((drug) => {
-        supplSheet.addRow(drug);
-      });
-
-      supplSheet.getColumn("summaryKr").alignment = { wrapText: true };
-      supplSheet.getColumn("summaryEn").alignment = { wrapText: true };
+      // 파일명 생성
+      let fileName = "US-FDA-Approvals";
+      if (exportMode === "custom" && customStartDate && customEndDate) {
+        fileName = `US-FDA-Approvals_${format(customStartDate, "yyyyMMdd")}-${format(customEndDate, "yyyyMMdd")}`;
+      } else if (exportMode === "filtered") {
+        fileName = `US-FDA-Approvals_filtered_${format(new Date(), "yyyyMMdd")}`;
+      } else {
+        fileName = `US-FDA-Approvals_all_${format(new Date(), "yyyyMMdd")}`;
+      }
 
       // 엑셀 파일 다운로드
       const buffer = await workbook.xlsx.writeBuffer();
@@ -611,13 +459,13 @@ export function FdaNovelDrugsExport() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "2026-01-US-FDA-Novel-Drugs.xlsx";
+      a.download = `${fileName}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
 
       toast({
         title: "엑셀 다운로드 완료",
-        description: `2026년 1월 US FDA 신약 전문의약품 ${allJanuaryDrugs.length}건이 다운로드되었습니다.`,
+        description: `US FDA 승인 의약품 ${exportData.length}건이 다운로드되었습니다.`,
       });
       setIsOpen(false);
     } catch (error) {
@@ -637,45 +485,154 @@ export function FdaNovelDrugsExport() {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Download className="h-4 w-4" />
-          1월 신약 엑셀
+          엑셀 다운로드
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
-            2026년 1월 US FDA 신약 전문의약품
+            US FDA 전문의약품 엑셀 내보내기
           </DialogTitle>
           <DialogDescription>
-            NDA/BLA 최초승인 및 주요 변경승인 목록을 엑셀로 다운로드합니다.
+            선택한 기간 또는 필터 조건에 맞는 데이터를 엑셀로 다운로드합니다.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">최초승인 (ORIG-1)</span>
-              <span className="text-sm text-primary font-bold">{januaryNovelDrugs.length}건</span>
+          {/* 내보내기 범위 선택 */}
+          <div className="space-y-2">
+            <Label>내보내기 범위</Label>
+            <Select value={exportMode} onValueChange={(v) => setExportMode(v as ExportMode)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    <span>전체 데이터</span>
+                    <span className="text-xs text-muted-foreground">({data.length}건)</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="filtered">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-3 w-3" />
+                    <span>현재 필터 적용</span>
+                    <span className="text-xs text-muted-foreground">({filteredData.length}건)</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="custom">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-3 w-3" />
+                    <span>기간 직접 선택</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 커스텀 기간 선택 */}
+          {exportMode === "custom" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-xs">시작일</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !customStartDate && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {customStartDate ? format(customStartDate, "yyyy-MM-dd") : "시작일 선택"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={customStartDate}
+                      onSelect={setCustomStartDate}
+                      locale={ko}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">종료일</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !customEndDate && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {customEndDate ? format(customEndDate, "yyyy-MM-dd") : "종료일 선택"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={customEndDate}
+                      onSelect={setCustomEndDate}
+                      locale={ko}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">주요 변경승인 (SUPPL)</span>
-              <span className="text-sm text-amber-600 font-bold">{januaryMajorSupplements.length}건</span>
+          )}
+
+          {/* 통계 미리보기 */}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">대상 기간</span>
+              <span className="font-medium">{periodText}</span>
             </div>
-            <div className="border-t pt-2 flex justify-between items-center">
-              <span className="text-sm font-semibold">총계</span>
-              <span className="text-sm font-bold">{allJanuaryDrugs.length}건</span>
+            <div className="border-t pt-2 space-y-1">
+              <div className="flex justify-between items-center text-sm">
+                <span className="font-medium">전체 승인</span>
+                <span className="text-primary font-bold">{stats.total}건</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 text-xs text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>항암제</span>
+                  <span>{stats.oncologyCount}건</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>비항암제</span>
+                  <span>{stats.nonOncologyCount}건</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>바이오시밀러</span>
+                  <span>{stats.biosimilarCount}건</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>신약</span>
+                  <span>{stats.novelDrugCount}건</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>희귀의약품</span>
+                  <span>{stats.orphanDrugCount}건</span>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="text-xs text-muted-foreground space-y-1">
             <p className="font-medium">포함 시트:</p>
             <ul className="list-disc list-inside space-y-0.5 ml-2">
-              <li>2026년 1월 신약 요약 (전체)</li>
-              <li>국문 상세</li>
-              <li>English Details</li>
-              <li>최초승인 (ORIG-1)</li>
-              <li>변경승인 (SUPPL)</li>
+              <li>요약 (통계 + 치료영역별 분포 + 약물 목록)</li>
+              <li>국문 상세 (전체 컬럼)</li>
+              <li>English Details (전체 컬럼)</li>
             </ul>
+            <p className="mt-2 text-muted-foreground/80">* 모든 시트에 색상 범례가 포함됩니다.</p>
           </div>
         </div>
 
@@ -683,7 +640,7 @@ export function FdaNovelDrugsExport() {
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             취소
           </Button>
-          <Button onClick={generateExcel} disabled={isGenerating} className="gap-2">
+          <Button onClick={generateExcel} disabled={isGenerating || exportData.length === 0} className="gap-2">
             {isGenerating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -692,7 +649,7 @@ export function FdaNovelDrugsExport() {
             ) : (
               <>
                 <Download className="h-4 w-4" />
-                엑셀 다운로드
+                엑셀 다운로드 ({exportData.length}건)
               </>
             )}
           </Button>
