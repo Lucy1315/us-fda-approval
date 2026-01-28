@@ -72,19 +72,41 @@ const therapeuticAreaEnMap: Record<string, string> = {
 
 // 승인유형 영문 매핑
 const getApprovalTypeEn = (drug: DrugApproval): string => {
-  if (drug.approvalType === "정규승인") {
-    if (drug.isNovelDrug) {
-      return "Original Approval (Type 1 - New Molecular Entity)";
+  const isSupplemental = isSupplementalApproval(drug);
+  
+  if (isSupplemental) {
+    // 변경승인 상세 분류
+    if (drug.notes?.includes("라벨링") || drug.notes?.includes("Labeling")) {
+      return "Supplemental Approval (Labeling)";
     }
-    if (drug.isBiosimilar) {
-      return "Original Approval (Biosimilar)";
+    if (drug.notes?.includes("효능") || drug.notes?.includes("Efficacy")) {
+      return "Supplemental Approval (Efficacy)";
     }
-    if (drug.notes?.includes("변경승인") || drug.notes?.includes("적응증")) {
-      return "Supplemental Approval";
-    }
-    return "Original Approval";
+    return "Supplemental Approval";
   }
-  return "Supplemental Approval";
+  
+  // 최초승인 상세 분류
+  if (drug.isNovelDrug) {
+    return "Original Approval (Type 1 - New Molecular Entity)";
+  }
+  if (drug.isBiosimilar) {
+    return "Original Approval (Biosimilar)";
+  }
+  if (drug.notes?.includes("신규 제형") || drug.notes?.includes("New Dosage Form")) {
+    return "Original Approval (Type 3 - New Dosage Form)";
+  }
+  return "Original Approval";
+};
+
+// 변경승인 여부 판단 함수
+const isSupplementalApproval = (drug: DrugApproval): boolean => {
+  const notes = drug.notes || "";
+  return notes.includes("변경승인") || 
+         notes.includes("적응증 추가") || 
+         notes.includes("적응증 확대") ||
+         notes.includes("보충신청") ||
+         notes.includes("라벨링") ||
+         notes.includes("Supplemental");
 };
 
 export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportProps) {
@@ -334,13 +356,13 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
       
       const origColumns = [
         { header: "승인일", key: "approvalDate", width: 12 },
-        { header: "제품명", key: "brandName", width: 12 },
-        { header: "성분명", key: "activeIngredient", width: 22 },
+        { header: "제품명", key: "brandName", width: 14 },
+        { header: "성분명", key: "activeIngredient", width: 25 },
         { header: "NDA/BLA 번호", key: "ndaBlaNumber", width: 14 },
         { header: "제약사", key: "sponsor", width: 22 },
-        { header: "승인유형", key: "approvalTypeEn", width: 45 },
-        { header: "요약 (국문)", key: "summaryKr", width: 65 },
-        { header: "Summary (English)", key: "summaryEn", width: 75 },
+        { header: "승인유형", key: "approvalTypeEn", width: 42 },
+        { header: "요약 (국문)", key: "summaryKr", width: 70 },
+        { header: "Summary (English)", key: "summaryEn", width: 80 },
       ];
 
       origSheet.columns = origColumns;
@@ -349,18 +371,30 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
       origSheet.getRow(1).fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: "FFDC2626" },
+        fgColor: { argb: "FF2563EB" }, // 파란색 헤더
       };
       origSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
-      // 최초승인 필터 (변경승인이 아닌 것)
-      const originalApprovals = exportData.filter(d => !d.notes?.includes("변경승인"));
+      // 최초승인 필터 (변경승인이 아닌 것들)
+      const originalApprovals = exportData.filter(d => !isSupplementalApproval(d));
       
       originalApprovals.forEach((drug) => {
         const therapeuticAreaEn = therapeuticAreaEnMap[drug.therapeuticArea] || drug.therapeuticArea;
         const approvalTypeEn = getApprovalTypeEn(drug);
         const summaryKr = drug.indicationFull + (drug.notes ? ` ${drug.notes}` : "");
-        const summaryEn = `${drug.isNovelDrug ? "Novel drug" : drug.isBiosimilar ? "Biosimilar" : "Drug"} for ${therapeuticAreaEn.toLowerCase()}. ${drug.notes || ""}`.trim();
+        
+        // 영문 요약 생성 - 이미지 형식 참고
+        let summaryEn = "";
+        if (drug.isBiosimilar) {
+          const biosimilarTarget = drug.notes?.match(/(\w+)\s*바이오시밀러/)?.[1] || "";
+          const indication = therapeuticAreaEn.split(" - ")[1] || therapeuticAreaEn;
+          summaryEn = `${drug.activeIngredient} biosimilar for treatment of ${indication.toLowerCase()}. Biosimilar to ${biosimilarTarget || "reference product"}.`;
+        } else if (drug.isNovelDrug) {
+          const indication = therapeuticAreaEn.split(" - ")[1] || therapeuticAreaEn;
+          summaryEn = `${drug.notes?.includes("FDA 최초 승인") ? "First FDA-approved treatment for " : ""}${indication.toLowerCase()}. ${drug.notes?.includes("Breakthrough Therapy") ? "With Breakthrough Therapy and Rare Pediatric Disease designations." : ""}`.trim();
+        } else {
+          summaryEn = `${approvalTypeEn.replace("Original Approval", "").replace(/[()]/g, "").trim() || "New"} approval. ${drug.notes || ""}`;
+        }
         
         const row = origSheet.addRow({
           approvalDate: drug.approvalDate,
@@ -370,7 +404,7 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
           sponsor: drug.sponsor,
           approvalTypeEn,
           summaryKr,
-          summaryEn,
+          summaryEn: summaryEn.trim(),
         });
         applyRowColor(row, drug, origColumns.length);
       });
@@ -384,32 +418,49 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
       
       const supplColumns = [
         { header: "승인일", key: "approvalDate", width: 12 },
-        { header: "제품명", key: "brandName", width: 12 },
-        { header: "성분명", key: "activeIngredient", width: 26 },
+        { header: "제품명", key: "brandName", width: 14 },
+        { header: "성분명", key: "activeIngredient", width: 25 },
         { header: "NDA/BLA 번호", key: "ndaBlaNumber", width: 14 },
         { header: "제약사", key: "sponsor", width: 22 },
-        { header: "승인유형", key: "approvalTypeEn", width: 35 },
-        { header: "요약 (국문)", key: "summaryKr", width: 60 },
-        { header: "Summary (English)", key: "summaryEn", width: 70 },
+        { header: "승인유형", key: "approvalTypeEn", width: 32 },
+        { header: "요약 (국문)", key: "summaryKr", width: 70 },
+        { header: "Summary (English)", key: "summaryEn", width: 80 },
       ];
 
       supplSheet.columns = supplColumns;
 
-      supplSheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+      supplSheet.getRow(1).font = { bold: true, color: { argb: "FF000000" } }; // 검정 텍스트
       supplSheet.getRow(1).fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: "FFF59E0B" },
+        fgColor: { argb: "FFFBBF24" }, // 노란색 헤더
       };
       supplSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
       // 변경승인 필터
-      const supplementalApprovals = exportData.filter(d => d.notes?.includes("변경승인"));
+      const supplementalApprovals = exportData.filter(d => isSupplementalApproval(d));
       
       supplementalApprovals.forEach((drug) => {
         const therapeuticAreaEn = therapeuticAreaEnMap[drug.therapeuticArea] || drug.therapeuticArea;
+        const approvalTypeEn = getApprovalTypeEn(drug);
         const summaryKr = drug.indicationFull + (drug.notes ? ` ${drug.notes}` : "");
-        const summaryEn = `Supplemental approval for ${therapeuticAreaEn.toLowerCase()}. ${drug.notes || ""}`.trim();
+        
+        // 영문 요약 생성 - 이미지 형식 참고
+        let summaryEn = "";
+        const indication = therapeuticAreaEn.split(" - ")[1] || therapeuticAreaEn;
+        
+        if (drug.isBiosimilar) {
+          summaryEn = `Supplemental approval for ${drug.activeIngredient} biosimilar for ${indication.toLowerCase()}.`;
+        } else {
+          // 구체적인 적응증/승인 내용 추출
+          if (drug.notes?.includes("적응증 추가") || drug.notes?.includes("적응증 확대")) {
+            summaryEn = `Supplemental approval for ${drug.activeIngredient} for ${indication.toLowerCase()}.`;
+          } else if (drug.notes?.includes("보충신청")) {
+            summaryEn = `Supplemental approval for ${drug.activeIngredient} ${drug.notes.includes("바이오시밀러") ? "biosimilar" : ""} for ${indication.toLowerCase()}.`;
+          } else {
+            summaryEn = `Supplemental approval for ${drug.activeIngredient} for ${indication.toLowerCase()}. ${drug.notes?.replace(/변경승인\s*-?\s*/g, "") || ""}`.trim();
+          }
+        }
         
         const row = supplSheet.addRow({
           approvalDate: drug.approvalDate,
@@ -417,9 +468,9 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
           activeIngredient: drug.activeIngredient,
           ndaBlaNumber: drug.ndaBlaNumber,
           sponsor: drug.sponsor,
-          approvalTypeEn: "Supplemental Approval",
+          approvalTypeEn,
           summaryKr,
-          summaryEn,
+          summaryEn: summaryEn.trim(),
         });
         applyRowColor(row, drug, supplColumns.length);
       });
