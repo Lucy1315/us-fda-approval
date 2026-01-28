@@ -48,6 +48,15 @@ function getFdaProductUrl(drug: DrugApproval): string {
 export function DrugTable({ data }: DrugTableProps) {
   const [selectedDrug, setSelectedDrug] = useState<DrugApproval | null>(null);
 
+  // Ensure stable chronological rendering (and avoid React row re-use issues with duplicate applicationNo)
+  const sorted = [...data].sort((a, b) => {
+    const byDate = a.approvalDate.localeCompare(b.approvalDate);
+    if (byDate !== 0) return byDate;
+    const byApp = a.applicationNo.localeCompare(b.applicationNo);
+    if (byApp !== 0) return byApp;
+    return (a.supplementCategory || "").localeCompare(b.supplementCategory || "");
+  });
+
   if (data.length === 0) {
     return (
       <Card>
@@ -86,8 +95,11 @@ export function DrugTable({ data }: DrugTableProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map((drug) => (
-                  <TableRow key={drug.applicationNo} className="hover:bg-muted/50 transition-colors">
+                {sorted.map((drug) => (
+                  <TableRow
+                    key={`${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`}
+                    className="hover:bg-muted/50 transition-colors"
+                  >
                     <TableCell className="font-medium text-sm">
                       {drug.approvalDate}
                     </TableCell>
