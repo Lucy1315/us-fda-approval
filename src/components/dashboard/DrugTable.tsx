@@ -24,24 +24,8 @@ interface DrugTableProps {
 }
 
 function getFdaProductUrl(drug: DrugApproval): string {
-  // Priority 1: Use data-driven URL if available
-  if (drug.fdaUrl) return drug.fdaUrl;
-
-  const name = (drug.brandName || "").trim().toUpperCase();
-
-  // Priority 2: Explicit overrides for biologics/special cases
-  const specialOverrides: Record<string, string> = {
-    "ITVISMA": "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/itvisma",
-    "IMDELLTRA": "https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=BasicSearch.process",
-    "VOYXACT": "https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=BasicSearch.process",
-    "ARMLUPEG": "https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=BasicSearch.process",
-  };
-
-  if (specialOverrides[name]) {
-    return specialOverrides[name];
-  }
-
-  // Priority 3: Drugs@FDA product page by application number
+  // Always use Drugs@FDA database lookup - most reliable and stable URL format
+  // Works for both NDA (drugs) and BLA (biologics) application numbers
   return `https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${drug.applicationNo}`;
 }
 
