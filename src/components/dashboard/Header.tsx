@@ -1,6 +1,7 @@
 import { Calendar, Database, FileText } from "lucide-react";
 import { ExcelUpload } from "./ExcelUpload";
 import { FdaNovelDrugsExport } from "./FdaNovelDrugsExport";
+import { FdaValidation } from "./FdaValidation";
 import { UsageGuide } from "./UsageGuide";
 import { DrugApproval } from "@/data/fdaData";
 
@@ -40,6 +41,7 @@ export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
             </div>
           </div>
           <UsageGuide />
+          <FdaValidation data={data} />
           <FdaNovelDrugsExport data={data} filteredData={filteredData} />
           <ExcelUpload onDataUpdate={onDataUpdate} />
         </div>
