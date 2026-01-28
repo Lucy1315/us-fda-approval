@@ -111,8 +111,8 @@ export function DrugTable({ data }: DrugTableProps) {
                           희귀
                         </Badge>
                       )}
-                      {drug.isBiosimilar && (
-                        <Badge variant="outline" className="text-xs border-secondary text-secondary">
+{drug.isBiosimilar && (
+                        <Badge variant="outline" className="text-xs border-emerald-500 text-emerald-600 bg-emerald-50">
                           바이오시밀러
                         </Badge>
                       )}
