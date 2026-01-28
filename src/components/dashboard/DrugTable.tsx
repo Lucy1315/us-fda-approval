@@ -34,6 +34,10 @@ function getFdaProductUrl(drug: DrugApproval): string {
   if (cberProducts[name]) {
     return cberProducts[name];
   }
+
+  // If an explicit FDA URL is provided in the dataset, prefer it.
+  // (Many products have stable FDA pages outside Drugs@FDA: biosimilars pages, press releases, CBER pages, etc.)
+  if (drug.fdaUrl) return drug.fdaUrl;
   
   // Default: Drugs@FDA database lookup - works for NDA and most BLA products
   return `https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${drug.applicationNo}`;

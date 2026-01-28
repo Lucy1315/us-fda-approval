@@ -44,8 +44,9 @@ export const fdaApprovals: DrugApproval[] = [
   {
     approvalMonth: "2025-12",
     approvalDate: "2025-12-05",
-    ndaBlaNumber: "BLA 125486",
-    applicationNo: "125486",
+    // Note: BLA 125486 corresponds to GAZYVA. BREYANZI is under BLA 125714.
+    ndaBlaNumber: "BLA 125714",
+    applicationNo: "125714",
     applicationType: "BLA",
     brandName: "BREYANZI",
     activeIngredient: "lisocabtagene maraleucel",
