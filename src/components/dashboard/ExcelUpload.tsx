@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { DrugApproval } from "@/data/fdaData";
 import { useToast } from "@/hooks/use-toast";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 interface ExcelUploadProps {
   onDataUpdate: (data: DrugApproval[]) => void;
@@ -26,16 +26,37 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const parseExcel = (buffer: ArrayBuffer): DrugApproval[] => {
-    const workbook = XLSX.read(buffer, { type: "array" });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: "" });
+  const parseExcel = async (buffer: ArrayBuffer): Promise<DrugApproval[]> => {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+    
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) {
+      throw new Error("No worksheet found");
+    }
 
-    return jsonData.map((row) => {
+    const headers: string[] = [];
+    const firstRow = worksheet.getRow(1);
+    firstRow.eachCell((cell, colNumber) => {
+      headers[colNumber - 1] = String(cell.value || "").trim();
+    });
+
+    const results: DrugApproval[] = [];
+    
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return; // Skip header row
+      
+      const rowData: Record<string, unknown> = {};
+      row.eachCell((cell, colNumber) => {
+        const header = headers[colNumber - 1];
+        if (header) {
+          rowData[header] = cell.value;
+        }
+      });
+
       const getValue = (keys: string[]): string => {
         for (const key of keys) {
-          const value = row[key] || row[key.toLowerCase()] || row[key.toUpperCase()];
+          const value = rowData[key] || rowData[key.toLowerCase()] || rowData[key.toUpperCase()];
           if (value !== undefined && value !== null && value !== "") {
             return String(value).trim();
           }
@@ -48,26 +69,32 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
         return value.toLowerCase() === "true" || value === "Y" || value === "y" || value === "1";
       };
 
-      return {
+      const drug: DrugApproval = {
         approvalMonth: getValue(["approval_month", "승인월", "ApprovalMonth"]),
         approvalDate: getValue(["approval_date", "승인일", "ApprovalDate"]),
-        ndaBlaNumber: getValue(["nda_bla_number", "신청번호", "NDA_BLA_Number"]),
-        applicationNo: getValue(["application_no", "허가번호", "ApplicationNo"]),
+        ndaBlaNumber: getValue(["nda_bla_number", "신청번호", "NDA_BLA_Number", "NDA/BLA번호"]),
+        applicationNo: getValue(["application_no", "허가번호", "ApplicationNo", "신청번호"]),
         applicationType: getValue(["application_type", "신청유형", "ApplicationType"]),
         brandName: getValue(["brand_name", "제품명", "BrandName"]),
         activeIngredient: getValue(["active_ingredient", "주성분", "ActiveIngredient"]),
         sponsor: getValue(["sponsor", "제약사", "Sponsor"]),
         indicationFull: getValue(["indication_full", "적응증", "IndicationFull"]),
         therapeuticArea: getValue(["therapeutic_area", "치료영역", "TherapeuticArea"]),
-        isOncology: getBoolValue(["is_oncology", "항암제", "IsOncology"]),
-        isBiosimilar: getBoolValue(["is_biosimilar", "바이오시밀러", "IsBiosimilar"]),
-        isNovelDrug: getBoolValue(["is_novel_drug", "신약", "IsNovelDrug"]),
-        isOrphanDrug: getBoolValue(["is_orphan_drug", "희귀의약품", "IsOrphanDrug"]),
+        isOncology: getBoolValue(["is_oncology", "항암제", "IsOncology", "항암제여부"]),
+        isBiosimilar: getBoolValue(["is_biosimilar", "바이오시밀러", "IsBiosimilar", "바이오시밀러여부"]),
+        isNovelDrug: getBoolValue(["is_novel_drug", "신약", "IsNovelDrug", "신약여부"]),
+        isOrphanDrug: getBoolValue(["is_orphan_drug", "희귀의약품", "IsOrphanDrug", "희귀의약품여부"]),
         approvalType: getValue(["approval_type", "승인유형", "ApprovalType"]),
         notes: getValue(["notes", "비고", "Notes"]),
-        fdaUrl: getValue(["fda_url", "fdaUrl", "FDA_URL"]),
+        fdaUrl: getValue(["fda_url", "fdaUrl", "FDA_URL", "FDA승인페이지"]),
       };
-    }).filter(drug => drug.brandName && drug.approvalDate);
+
+      if (drug.brandName && drug.approvalDate) {
+        results.push(drug);
+      }
+    });
+
+    return results;
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,7 +107,7 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
 
     try {
       const buffer = await file.arrayBuffer();
-      const data = parseExcel(buffer);
+      const data = await parseExcel(buffer);
 
       if (data.length === 0) {
         toast({
