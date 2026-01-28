@@ -86,7 +86,7 @@ const Index = () => {
             value={stats.oncology}
             subtitle={`비항암제: ${stats.nonOncology}건`}
             icon={FlaskConical}
-            variant="accent"
+            variant="oncology"
           />
           <StatCard
             title="신약 (Novel)"
