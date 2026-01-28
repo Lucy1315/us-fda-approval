@@ -31,7 +31,6 @@ export interface FilterState {
   isBiosimilar: string;
   isNovelDrug: string;
   isOrphanDrug: string;
-  isCberProduct: string;
 }
 
 interface FiltersProps {
@@ -96,7 +95,6 @@ export function Filters({ data, filters, onFilterChange }: FiltersProps) {
       isBiosimilar: "all",
       isNovelDrug: "all",
       isOrphanDrug: "all",
-      isCberProduct: "all",
     });
   };
 
@@ -299,20 +297,6 @@ export function Filters({ data, filters, onFilterChange }: FiltersProps) {
             </SelectContent>
           </Select>
         </div>
-
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">CBER</label>
-          <Select value={filters.isCberProduct} onValueChange={(v) => handleChange("isCberProduct", v)}>
-            <SelectTrigger className="h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {booleanOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </div>
     </div>
   );
@@ -384,9 +368,6 @@ export function applyFilters(data: DrugApproval[], filters: FilterState): DrugAp
       return false;
     }
     if (filters.isOrphanDrug !== "all" && drug.isOrphanDrug !== (filters.isOrphanDrug === "true")) {
-      return false;
-    }
-    if (filters.isCberProduct !== "all" && (drug.isCberProduct ?? false) !== (filters.isCberProduct === "true")) {
       return false;
     }
 
