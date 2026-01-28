@@ -5,10 +5,11 @@ import { DrugApproval } from "@/data/fdaData";
 
 interface HeaderProps {
   onDataUpdate: (data: DrugApproval[]) => void;
-  dataCount: number;
+  data: DrugApproval[];
+  filteredData: DrugApproval[];
 }
 
-export function Header({ onDataUpdate, dataCount }: HeaderProps) {
+export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
   return (
     <header className="mb-8">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
@@ -30,14 +31,14 @@ export function Header({ onDataUpdate, dataCount }: HeaderProps) {
           <div className="flex items-center gap-6 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Database className="h-4 w-4" />
-              <span>데이터: <strong className="text-foreground">{dataCount}건</strong></span>
+              <span>데이터: <strong className="text-foreground">{data.length}건</strong></span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="h-4 w-4" />
               <span>수집일: <strong className="text-foreground">2026-01-28</strong></span>
             </div>
           </div>
-          <FdaNovelDrugsExport />
+          <FdaNovelDrugsExport data={data} filteredData={filteredData} />
           <ExcelUpload onDataUpdate={onDataUpdate} />
         </div>
       </div>
