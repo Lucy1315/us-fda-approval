@@ -13,20 +13,14 @@ interface TherapeuticAreaChartProps {
 }
 
 const COLORS = [
-  "hsl(262, 65%, 60%)",  // violet
-  "hsl(200, 70%, 55%)",  // blue
-  "hsl(160, 55%, 50%)",  // teal
-  "hsl(45, 90%, 55%)",   // yellow
-  "hsl(320, 60%, 60%)",  // pink
-  "hsl(85, 55%, 50%)",   // lime
-  "hsl(280, 55%, 60%)",  // purple
-];
-
-const ONCOLOGY_COLORS = [
-  "hsl(25, 95%, 55%)",   // orange
-  "hsl(15, 85%, 55%)",   // red-orange
-  "hsl(35, 90%, 55%)",   // amber
-  "hsl(45, 90%, 55%)",   // yellow
+  "hsl(210, 70%, 50%)",  // blue
+  "hsl(210, 65%, 58%)",  // light blue
+  "hsl(210, 60%, 42%)",  // dark blue
+  "hsl(200, 70%, 55%)",  // cyan-blue
+  "hsl(220, 65%, 55%)",  // indigo-blue
+  "hsl(195, 70%, 50%)",  // sky blue
+  "hsl(215, 60%, 48%)",  // steel blue
+  "hsl(205, 65%, 52%)",  // ocean blue
 ];
 
 export function TherapeuticAreaChart({ data }: TherapeuticAreaChartProps) {
@@ -145,7 +139,7 @@ export function TherapeuticAreaChart({ data }: TherapeuticAreaChartProps) {
                     />
                     <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
                       {sortedOncologyData.map((_, index) => (
-                        <Cell key={`cell-onc-${index}`} fill={ONCOLOGY_COLORS[index % ONCOLOGY_COLORS.length]} />
+                        <Cell key={`cell-onc-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                       <LabelList 
                         dataKey="value" 
