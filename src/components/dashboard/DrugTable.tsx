@@ -24,20 +24,24 @@ interface DrugTableProps {
 }
 
 function getFdaProductUrl(drug: DrugApproval): string {
-  const name = (drug.brandName || "").trim().toUpperCase();
-
-  // Explicit overrides requested
-  if (name === "ITVISMA") {
-    return "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/itvisma";
-  }
-  if (name === "IMDELLTRA" || name === "VOYXACT" || name === "ARMLUPEG") {
-    return "https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=BasicSearch.process";
-  }
-
-  // Data-driven override (if present)
+  // Priority 1: Use data-driven URL if available
   if (drug.fdaUrl) return drug.fdaUrl;
 
-  // Fallback
+  const name = (drug.brandName || "").trim().toUpperCase();
+
+  // Priority 2: Explicit overrides for biologics/special cases
+  const specialOverrides: Record<string, string> = {
+    "ITVISMA": "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/itvisma",
+    "IMDELLTRA": "https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=BasicSearch.process",
+    "VOYXACT": "https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=BasicSearch.process",
+    "ARMLUPEG": "https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=BasicSearch.process",
+  };
+
+  if (specialOverrides[name]) {
+    return specialOverrides[name];
+  }
+
+  // Priority 3: Drugs@FDA product page by application number
   return `https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${drug.applicationNo}`;
 }
 
