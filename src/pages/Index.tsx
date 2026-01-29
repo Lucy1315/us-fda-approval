@@ -1,81 +1,27 @@
-import { useEffect, useMemo, useState } from "react";
-import { Pill, FlaskConical, Star, Microscope, Syringe, Activity } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Pill, FlaskConical, Star, Microscope, Syringe, Activity, Loader2, CloudOff } from "lucide-react";
 import { Header } from "@/components/dashboard/Header";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TherapeuticAreaChart } from "@/components/dashboard/TherapeuticAreaChart";
-
-
 import { DrugTable } from "@/components/dashboard/DrugTable";
 import { Highlights } from "@/components/dashboard/Highlights";
 import { Filters, FilterState, applyFilters } from "@/components/dashboard/Filters";
-import { fdaApprovals, DrugApproval } from "@/data/fdaData";
+import { DrugApproval } from "@/data/fdaData";
+import { useCloudData } from "@/hooks/useCloudData";
 
-const LOCAL_DATA_KEY = "fda_approvals_overrides_v1";
-// Version key: creates a fingerprint from source data to invalidate stale localStorage overrides
-const createDataFingerprint = () => {
-  const first = fdaApprovals[0];
-  const last = fdaApprovals[fdaApprovals.length - 1];
-  const idsLen = fdaApprovals.reduce((acc, d) => acc + (d.applicationNo?.length || 0), 0);
-  return `v2-${fdaApprovals.length}-${first?.applicationNo || ""}-${last?.applicationNo || ""}-${idsLen}`;
-};
-const SOURCE_DATA_VERSION = createDataFingerprint();
-const VERSION_KEY = "fda_source_version";
-
-function deduplicateData(data: DrugApproval[]): DrugApproval[] {
+function deduplicateData(items: DrugApproval[]): DrugApproval[] {
   const seen = new Set<string>();
-  return data.filter((drug) => {
-    // Create unique key based on applicationNo, approvalDate, and supplementCategory only
-    // This ensures products like MEN'S ROGAINE / WOMEN'S ROGAINE with same NDA are consolidated
+  return items.filter((drug) => {
     const key = `${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`;
-    if (seen.has(key)) {
-      return false;
-    }
+    if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 }
 
-function loadPersistedData(): DrugApproval[] | null {
-  try {
-    // Check if source data version changed - if so, invalidate cache
-    const storedVersion = localStorage.getItem(VERSION_KEY);
-    if (storedVersion !== SOURCE_DATA_VERSION) {
-      // Source data was updated, clear old cache and use fresh source data
-      localStorage.removeItem(LOCAL_DATA_KEY);
-      localStorage.setItem(VERSION_KEY, SOURCE_DATA_VERSION);
-      return null;
-    }
-    
-    const raw = localStorage.getItem(LOCAL_DATA_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return null;
-    // Minimal shape check to avoid breaking the app on malformed storage.
-    if (parsed.length > 0 && typeof parsed[0] === "object" && parsed[0] !== null && "applicationNo" in (parsed[0] as any)) {
-      // Deduplicate data to remove any duplicates
-      return deduplicateData(parsed as DrugApproval[]);
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function persistData(data: DrugApproval[]) {
-  try {
-    // Only persist if the current source version matches.
-    // This prevents re-saving stale state during/after a source-data update.
-    const storedVersion = localStorage.getItem(VERSION_KEY);
-    if (storedVersion !== SOURCE_DATA_VERSION) return;
-    localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(data));
-    localStorage.setItem(VERSION_KEY, SOURCE_DATA_VERSION);
-  } catch {
-    // ignore
-  }
-}
-
 const Index = () => {
-  const [data, setData] = useState<DrugApproval[]>(() => loadPersistedData() ?? fdaApprovals);
+  const { data, isLoading, updateData, saveToCloud, isFromCloud, cloudVersion, cloudUpdatedAt } = useCloudData();
+
   const [filters, setFilters] = useState<FilterState>({
     dateRange: "all",
     startDate: undefined,
@@ -91,9 +37,7 @@ const Index = () => {
 
   const filteredData = useMemo(() => {
     const filtered = applyFilters(data, filters);
-    // Deduplicate again to ensure no duplicates slip through from localStorage overrides
     const deduped = deduplicateData(filtered);
-    // Always show the detailed list in chronological (oldest -> newest) order.
     return [...deduped].sort((a, b) => a.approvalDate.localeCompare(b.approvalDate));
   }, [data, filters]);
 
@@ -136,36 +80,29 @@ const Index = () => {
   }, [filteredData]);
 
 
-
-  const handleDataUpdate = (newData: DrugApproval[]) => {
-    setData(newData);
-  };
-
-  // If the bundled source data changed (e.g., publish/update), immediately invalidate local overrides
-  // and reset in-memory state too (not only on first load).
-  useEffect(() => {
-    try {
-      const storedVersion = localStorage.getItem(VERSION_KEY);
-      if (storedVersion !== SOURCE_DATA_VERSION) {
-        localStorage.removeItem(LOCAL_DATA_KEY);
-        localStorage.setItem(VERSION_KEY, SOURCE_DATA_VERSION);
-        setData(fdaApprovals);
-      }
-    } catch {
-      // ignore
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Persist any updates coming from FDA validation / Excel upload so they don't "revert" on refresh.
-  useEffect(() => {
-    persistData(data);
-  }, [data]);
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">데이터 로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <Header onDataUpdate={handleDataUpdate} data={data} filteredData={filteredData} />
+        <Header
+          onDataUpdate={updateData}
+          data={data}
+          filteredData={filteredData}
+          saveToCloud={saveToCloud}
+          isFromCloud={isFromCloud}
+          cloudVersion={cloudVersion}
+        />
         
         {/* Filters */}
         <Filters data={data} filters={filters} onFilterChange={setFilters} />

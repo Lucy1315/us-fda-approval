@@ -1,19 +1,22 @@
-import { Calendar, Database, FileText } from "lucide-react";
+import { Calendar, Database, FileText, Cloud } from "lucide-react";
 import { ExcelUpload } from "./ExcelUpload";
 import { FdaNovelDrugsExport } from "./FdaNovelDrugsExport";
 import { FdaValidation } from "./FdaValidation";
 import { UsageGuide } from "./UsageGuide";
 import { DataCommit } from "./DataCommit";
+import { AdminAuth } from "./AdminAuth";
 import { DrugApproval } from "@/data/fdaData";
 
 interface HeaderProps {
   onDataUpdate: (data: DrugApproval[]) => void;
   data: DrugApproval[];
   filteredData: DrugApproval[];
+  saveToCloud: (data: DrugApproval[], notes?: string) => Promise<boolean>;
+  isFromCloud: boolean;
+  cloudVersion: number | null;
 }
 
-export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
-
+export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCloud, cloudVersion }: HeaderProps) {
   return (
     <header className="mb-8">
       <div className="flex flex-col gap-3">
@@ -23,6 +26,12 @@ export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
           <h1 className="text-2xl font-bold text-foreground">
             US FDA 승인 전문의약품
           </h1>
+          {isFromCloud && (
+            <span className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded">
+              <Cloud className="h-3 w-3" />
+              v{cloudVersion}
+            </span>
+          )}
         </div>
         
         {/* 서브타이틀 + 데이터 정보 + 액션 버튼 */}
@@ -45,6 +54,12 @@ export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
             <DataCommit data={data} />
             <FdaNovelDrugsExport data={data} filteredData={filteredData} />
             <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} />
+            <AdminAuth
+              onSaveToCloud={saveToCloud}
+              data={data}
+              isFromCloud={isFromCloud}
+              cloudVersion={cloudVersion}
+            />
           </div>
         </div>
         
