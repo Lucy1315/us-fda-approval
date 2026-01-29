@@ -109,14 +109,23 @@ export function DrugTable({ data }: DrugTableProps) {
       let comparison = 0;
       
       if (sortField) {
-        const aVal = a[sortField]?.toString().toLowerCase() || "";
-        const bVal = b[sortField]?.toString().toLowerCase() || "";
-        comparison = aVal.localeCompare(bVal);
+        if (sortField === "approvalDate") {
+          // Date comparison: convert to Date objects for accurate sorting
+          const dateA = new Date(a.approvalDate).getTime();
+          const dateB = new Date(b.approvalDate).getTime();
+          comparison = dateA - dateB;
+        } else {
+          const aVal = a[sortField]?.toString().toLowerCase() || "";
+          const bVal = b[sortField]?.toString().toLowerCase() || "";
+          comparison = aVal.localeCompare(bVal);
+        }
       }
       
       // If primary sort is equal, use secondary sorts for stability
       if (comparison === 0) {
-        const byDate = a.approvalDate.localeCompare(b.approvalDate);
+        const dateA = new Date(a.approvalDate).getTime();
+        const dateB = new Date(b.approvalDate).getTime();
+        const byDate = dateA - dateB;
         if (byDate !== 0) return sortDirection === "asc" ? byDate : -byDate;
         const byApp = a.applicationNo.localeCompare(b.applicationNo);
         if (byApp !== 0) return byApp;
