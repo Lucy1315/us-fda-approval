@@ -31,7 +31,7 @@ function getFdaProductUrl(drug: DrugApproval): string {
   //    (e.g., CBER-regulated tissue / cellular & gene therapy products).
   const cberByApplicationNo: Record<string, string> = {
     // AVANCE: Tissue product (CBER) - BLA 761544
-    "761544": "https://www.fda.gov/vaccines-blood-biologics/tissue-tissue-products/avance-nerve-graft",
+    "761544": "https://www.fda.gov/vaccines-blood-biologics/avance",
     // BREYANZI: Cellular/Gene Therapy (CBER) - BLA 125714
     "125714": "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/breyanzi-lisocabtagene-maraleucel",
     // WASKYRA: Cellular/Gene Therapy (CBER) - BLA 125832
