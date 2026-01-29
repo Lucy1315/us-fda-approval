@@ -14,16 +14,117 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      fda_data_rows: {
+        Row: {
+          id: string
+          payload: Json
+          version_id: string
+        }
+        Insert: {
+          id?: string
+          payload: Json
+          version_id: string
+        }
+        Update: {
+          id?: string
+          payload?: Json
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fda_data_rows_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "fda_data_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fda_data_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_fingerprint: string | null
+          id: string
+          is_published: boolean
+          is_verified: boolean
+          notes: string | null
+          updated_at: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_fingerprint?: string | null
+          id?: string
+          is_published?: boolean
+          is_verified?: boolean
+          notes?: string | null
+          updated_at?: string
+          version_number?: never
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_fingerprint?: string | null
+          id?: string
+          is_published?: boolean
+          is_verified?: boolean
+          notes?: string | null
+          updated_at?: string
+          version_number?: never
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      public_fda_data_view: {
+        Row: {
+          payload: Json | null
+        }
+        Insert: {
+          payload?: Json | null
+        }
+        Update: {
+          payload?: Json | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      get_latest_published_version_id: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +251,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin"],
+    },
   },
 } as const

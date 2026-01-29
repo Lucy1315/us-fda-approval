@@ -98,15 +98,29 @@ export function UsageGuide() {
               </div>
             </section>
 
-            {/* 데이터 확정 */}
+            {/* 데이터 확정 (레거시) */}
             <section>
-              <h3 className="font-semibold text-base mb-3 text-primary">💾 데이터 확정</h3>
+              <h3 className="font-semibold text-base mb-3 text-primary">💾 데이터 확정 (레거시)</h3>
               <div className="space-y-3 pl-2">
                 <ul className="list-disc list-inside text-muted-foreground space-y-1">
                   <li>상단의 <strong className="text-foreground">"데이터 확정"</strong> 버튼을 클릭합니다</li>
                   <li>현재 브라우저에서 수정한 데이터를 TypeScript 코드 형태로 추출할 수 있습니다</li>
                   <li>추출된 코드를 소스 파일(fdaData.ts)에 직접 반영하면 모든 사용자에게 영구 적용됩니다</li>
                   <li>개발자/관리자가 데이터 변경을 코드베이스에 커밋할 때 사용합니다</li>
+                </ul>
+              </div>
+            </section>
+
+            {/* 클라우드 저장 (권장) */}
+            <section>
+              <h3 className="font-semibold text-base mb-3 text-primary">☁️ 클라우드 저장 (권장)</h3>
+              <div className="space-y-3 pl-2">
+                <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                  <li><strong className="text-foreground">"관리자 로그인"</strong> 버튼을 클릭하여 로그인합니다</li>
+                  <li>첫 번째 로그인 사용자는 <strong className="text-foreground">"관리자 등록"</strong> 버튼으로 관리자 권한을 획득합니다</li>
+                  <li>관리자로 로그인된 상태에서 <strong className="text-foreground">"클라우드 저장"</strong> 버튼을 클릭합니다</li>
+                  <li>저장된 데이터는 <strong className="text-foreground">프리뷰/공개 사이트 모두에서 동일하게</strong> 표시됩니다</li>
+                  <li>더 이상 퍼블리시 후 데이터가 초기화되지 않습니다!</li>
                 </ul>
               </div>
             </section>
