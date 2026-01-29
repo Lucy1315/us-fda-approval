@@ -12,6 +12,19 @@ import { fdaApprovals, DrugApproval } from "@/data/fdaData";
 
 const LOCAL_DATA_KEY = "fda_approvals_overrides_v1";
 
+function deduplicateData(data: DrugApproval[]): DrugApproval[] {
+  const seen = new Set<string>();
+  return data.filter((drug) => {
+    // Create unique key based on applicationNo, approvalDate, brandName, and supplementCategory
+    const key = `${drug.applicationNo}-${drug.approvalDate}-${drug.brandName}-${drug.supplementCategory || ""}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
 function loadPersistedData(): DrugApproval[] | null {
   try {
     const raw = localStorage.getItem(LOCAL_DATA_KEY);
@@ -20,7 +33,8 @@ function loadPersistedData(): DrugApproval[] | null {
     if (!Array.isArray(parsed)) return null;
     // Minimal shape check to avoid breaking the app on malformed storage.
     if (parsed.length > 0 && typeof parsed[0] === "object" && parsed[0] !== null && "applicationNo" in (parsed[0] as any)) {
-      return parsed as DrugApproval[];
+      // Deduplicate data to remove any duplicates
+      return deduplicateData(parsed as DrugApproval[]);
     }
     return null;
   } catch {
