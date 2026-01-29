@@ -90,14 +90,39 @@ export function useAuth() {
     return { success: true, data };
   }, [checkAdminRole]);
 
-  // Sign out
+  // Sign out - explicitly reset state with global scope
   const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error(error.message);
-      return { success: false, error };
+    try {
+      // Use global scope to ensure complete sign out
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      
+      if (error) {
+        console.error("SignOut error:", error.message);
+        toast.error(error.message);
+        return { success: false, error };
+      }
+      
+      // Explicitly reset state after successful signout
+      setState({
+        user: null,
+        session: null,
+        isLoading: false,
+        isAdmin: false,
+      });
+      
+      toast.success("로그아웃 되었습니다.");
+      return { success: true };
+    } catch (err) {
+      console.error("SignOut exception:", err);
+      // Still reset state on error
+      setState({
+        user: null,
+        session: null,
+        isLoading: false,
+        isAdmin: false,
+      });
+      return { success: false, error: err };
     }
-    return { success: true };
   }, []);
 
   // Bootstrap admin (first user becomes admin)
