@@ -78,7 +78,35 @@ export function UsageGuide() {
                 <ul className="list-disc list-inside text-muted-foreground space-y-1">
                   <li>우측 상단의 <strong className="text-foreground">"엑셀 업로드"</strong> 버튼을 클릭합니다</li>
                   <li>엑셀 파일(.xlsx, .xls)을 선택하여 데이터를 업데이트할 수 있습니다</li>
-                  <li>업로드된 데이터는 기존 데이터를 대체합니다</li>
+                  <li>업로드된 데이터는 기존 데이터에 <strong className="text-foreground">병합(추가)</strong>됩니다 (기존 데이터를 대체하지 않음)</li>
+                  <li>허가번호, 승인일, 승인유형이 동일한 항목은 중복으로 처리되어 추가되지 않습니다</li>
+                </ul>
+              </div>
+            </section>
+
+            {/* FDA 검증 */}
+            <section>
+              <h3 className="font-semibold text-base mb-3 text-primary">🔍 FDA 검증</h3>
+              <div className="space-y-3 pl-2">
+                <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                  <li>상단의 <strong className="text-foreground">"FDA 검증"</strong> 버튼을 클릭합니다</li>
+                  <li>openFDA API를 통해 현재 데이터의 브랜드명, 스폰서 정보가 공식 데이터와 일치하는지 검증합니다</li>
+                  <li>불일치 항목이 발견되면 목록으로 표시되며, 개별적으로 수정 여부를 선택할 수 있습니다</li>
+                  <li>수정 후 <strong className="text-foreground">"적용"</strong> 버튼을 눌러야 대시보드에 반영됩니다</li>
+                  <li>검증창을 닫기 전까지는 임시 수정 상태로 유지됩니다</li>
+                </ul>
+              </div>
+            </section>
+
+            {/* 데이터 확정 */}
+            <section>
+              <h3 className="font-semibold text-base mb-3 text-primary">💾 데이터 확정</h3>
+              <div className="space-y-3 pl-2">
+                <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                  <li>상단의 <strong className="text-foreground">"데이터 확정"</strong> 버튼을 클릭합니다</li>
+                  <li>현재 브라우저에서 수정한 데이터를 TypeScript 코드 형태로 추출할 수 있습니다</li>
+                  <li>추출된 코드를 소스 파일(fdaData.ts)에 직접 반영하면 모든 사용자에게 영구 적용됩니다</li>
+                  <li>개발자/관리자가 데이터 변경을 코드베이스에 커밋할 때 사용합니다</li>
                 </ul>
               </div>
             </section>
