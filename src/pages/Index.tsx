@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pill, FlaskConical, Star, Microscope, Syringe, Activity } from "lucide-react";
 import { Header } from "@/components/dashboard/Header";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -10,8 +10,34 @@ import { Highlights } from "@/components/dashboard/Highlights";
 import { Filters, FilterState, applyFilters } from "@/components/dashboard/Filters";
 import { fdaApprovals, DrugApproval } from "@/data/fdaData";
 
+const LOCAL_DATA_KEY = "fda_approvals_overrides_v1";
+
+function loadPersistedData(): DrugApproval[] | null {
+  try {
+    const raw = localStorage.getItem(LOCAL_DATA_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    // Minimal shape check to avoid breaking the app on malformed storage.
+    if (parsed.length > 0 && typeof parsed[0] === "object" && parsed[0] !== null && "applicationNo" in (parsed[0] as any)) {
+      return parsed as DrugApproval[];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function persistData(data: DrugApproval[]) {
+  try {
+    localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(data));
+  } catch {
+    // ignore
+  }
+}
+
 const Index = () => {
-  const [data, setData] = useState<DrugApproval[]>(fdaApprovals);
+  const [data, setData] = useState<DrugApproval[]>(() => loadPersistedData() ?? fdaApprovals);
   const [filters, setFilters] = useState<FilterState>({
     dateRange: "all",
     startDate: undefined,
@@ -67,6 +93,11 @@ const Index = () => {
   const handleDataUpdate = (newData: DrugApproval[]) => {
     setData(newData);
   };
+
+  // Persist any updates coming from FDA validation / Excel upload so they don't "revert" on refresh.
+  useEffect(() => {
+    persistData(data);
+  }, [data]);
 
   return (
     <div className="min-h-screen bg-background">
