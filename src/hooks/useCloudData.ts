@@ -38,43 +38,27 @@ export function useCloudData() {
     isFromCloud: false,
   });
 
-  // Load data from cloud with timeout
+  // Load data from cloud
   const loadFromCloud = useCallback(async () => {
-    const timeoutMs = 8000; // 8 second timeout
-    
     try {
-      // Create a timeout promise
-      const timeoutPromise = new Promise<null>((resolve) => {
-        setTimeout(() => {
-          console.warn("Cloud load timed out, using fallback data");
-          resolve(null);
-        }, timeoutMs);
+      const { data: response, error } = await supabase.functions.invoke("persist-fda-data", {
+        body: { action: "load" },
       });
-      
-      // Create the actual fetch promise
-      const fetchPromise = (async () => {
-        const { data: response, error } = await supabase.functions.invoke("persist-fda-data", {
-          body: { action: "load" },
-        });
 
-        if (error) {
-          console.error("Cloud load error:", error);
-          return null;
-        }
-
-        if (response?.success && response.data && response.data.length > 0) {
-          return {
-            data: deduplicateData(response.data as DrugApproval[]),
-            version: response.version,
-            updatedAt: response.updatedAt,
-          };
-        }
-
+      if (error) {
+        console.error("Cloud load error:", error);
         return null;
-      })();
+      }
 
-      // Race between timeout and fetch
-      return await Promise.race([fetchPromise, timeoutPromise]);
+      if (response?.success && response.data && response.data.length > 0) {
+        return {
+          data: deduplicateData(response.data as DrugApproval[]),
+          version: response.version,
+          updatedAt: response.updatedAt,
+        };
+      }
+
+      return null;
     } catch (err) {
       console.error("Cloud load failed:", err);
       return null;

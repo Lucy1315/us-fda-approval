@@ -8,7 +8,6 @@ import { Highlights } from "@/components/dashboard/Highlights";
 import { Filters, FilterState, applyFilters } from "@/components/dashboard/Filters";
 import { DrugApproval } from "@/data/fdaData";
 import { useCloudData } from "@/hooks/useCloudData";
-import { useAuth } from "@/hooks/useAuth";
 
 function deduplicateData(items: DrugApproval[]): DrugApproval[] {
   const seen = new Set<string>();
@@ -22,7 +21,6 @@ function deduplicateData(items: DrugApproval[]): DrugApproval[] {
 
 const Index = () => {
   const { data, isLoading, updateData, saveToCloud, isFromCloud, cloudVersion, cloudUpdatedAt } = useCloudData();
-  const { isAdmin, user, signIn, signUp, signOut, bootstrapAdmin } = useAuth();
 
   const [filters, setFilters] = useState<FilterState>({
     dateRange: "all",
@@ -104,12 +102,6 @@ const Index = () => {
           saveToCloud={saveToCloud}
           isFromCloud={isFromCloud}
           cloudVersion={cloudVersion}
-          isAdmin={isAdmin}
-          user={user}
-          onSignIn={signIn}
-          onSignUp={signUp}
-          onSignOut={signOut}
-          onBootstrapAdmin={bootstrapAdmin}
         />
         
         {/* Filters */}
