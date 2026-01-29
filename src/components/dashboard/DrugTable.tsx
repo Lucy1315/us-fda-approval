@@ -43,9 +43,10 @@ function getFdaProductUrl(drug: DrugApproval): string {
   const normalizedBrandName = drug.brandName.toUpperCase().trim();
   if (cberByBrandName[normalizedBrandName]) return cberByBrandName[normalizedBrandName];
 
-  // If the dataset provides a Drugs@FDA URL explicitly, it's safe to use.
-  // (Avoid using non-Drugs@FDA press-release pages here to prevent mismatches/changes.)
-  if (drug.fdaUrl && /accessdata\.fda\.gov\/scripts\/cder\/daf\/index\.cfm\?event=overview\.process&ApplNo=/.test(drug.fdaUrl)) {
+  // Prefer the explicit dataset URL when present.
+  // - CBER products are frequently NOT in Drugs@FDA, so their fdaUrl must be honored.
+  // - Many approvals have official press-release pages; those are acceptable and stable enough.
+  if (drug.fdaUrl && /^https?:\/\//i.test(drug.fdaUrl)) {
     return drug.fdaUrl;
   }
 
