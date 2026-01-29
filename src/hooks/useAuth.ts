@@ -18,23 +18,24 @@ export function useAuth() {
     isAdmin: false,
   });
 
-  // Check if user is admin (with caching)
+  // Check if user is admin
   const checkAdminRole = useCallback(async (userId: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase
         .from("user_roles")
-        .select("id")
+        .select("id, role")
         .eq("user_id", userId)
         .eq("role", "admin")
         .maybeSingle();
 
       if (error) {
-        console.error("Admin role check error:", error);
+        console.error("Admin role check error:", error.message);
         return false;
       }
 
-      return !!data;
-    } catch {
+      return data !== null;
+    } catch (err) {
+      console.error("Admin check exception:", err);
       return false;
     }
   }, []);
@@ -58,7 +59,7 @@ export function useAuth() {
     return { success: true, data };
   }, []);
 
-  // Sign in
+  // Sign in - immediately check admin role after successful login
   const signIn = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -70,8 +71,26 @@ export function useAuth() {
       return { success: false, error };
     }
 
+    // Immediately check admin role and update state
+    if (data.user) {
+      const isAdmin = await checkAdminRole(data.user.id);
+      setState(prev => ({
+        ...prev,
+        user: data.user,
+        session: data.session,
+        isAdmin,
+        isLoading: false,
+      }));
+      
+      if (isAdmin) {
+        toast.success("✅ 관리자로 로그인되었습니다.");
+      } else {
+        toast.success("로그인 성공");
+      }
+    }
+
     return { success: true, data };
-  }, []);
+  }, [checkAdminRole]);
 
   // Sign out
   const signOut = useCallback(async () => {
