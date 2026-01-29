@@ -98,8 +98,15 @@ const Index = () => {
     const orphanDrug = filteredData.filter((d) => d.isOrphanDrug).length;
     const blaCount = filteredData.filter((d) => d.applicationType === "BLA").length;
     const ndaCount = filteredData.filter((d) => d.applicationType === "NDA").length;
+    
+    // 최초승인 vs 변경승인 구분: SUPPL 포함 여부로 판단
+    const supplCount = filteredData.filter((d) => {
+      const cat = d.supplementCategory || "";
+      return cat.includes("SUPPL");
+    }).length;
+    const origCount = total - supplCount;
 
-    return { total, oncology, nonOncology, biosimilar, novelDrug, novelOncology, novelNonOncology, orphanDrug, blaCount, ndaCount };
+    return { total, oncology, nonOncology, biosimilar, novelDrug, novelOncology, novelNonOncology, orphanDrug, blaCount, ndaCount, origCount, supplCount };
   }, [filteredData]);
 
   const therapeuticAreaData = useMemo(() => {
@@ -142,7 +149,7 @@ const Index = () => {
           <StatCard
             title="전체 승인"
             value={stats.total}
-            subtitle={`필터 적용: ${filteredData.length === data.length ? "없음" : `${data.length}건 중`}`}
+            subtitle={`최초승인: ${stats.origCount} / 변경승인: ${stats.supplCount}`}
             icon={Pill}
             variant="primary"
           />
