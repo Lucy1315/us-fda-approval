@@ -1,12 +1,10 @@
-import { Calendar, Database, FileText, RotateCcw } from "lucide-react";
+import { Calendar, Database, FileText } from "lucide-react";
 import { ExcelUpload } from "./ExcelUpload";
 import { FdaNovelDrugsExport } from "./FdaNovelDrugsExport";
 import { FdaValidation } from "./FdaValidation";
 import { UsageGuide } from "./UsageGuide";
 import { DataCommit } from "./DataCommit";
-import { DrugApproval, fdaApprovals } from "@/data/fdaData";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { DrugApproval } from "@/data/fdaData";
 
 interface HeaderProps {
   onDataUpdate: (data: DrugApproval[]) => void;
@@ -14,14 +12,7 @@ interface HeaderProps {
   filteredData: DrugApproval[];
 }
 
-const LOCAL_DATA_KEY = "fda_approvals_overrides_v1";
-
 export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
-  const handleResetData = () => {
-    localStorage.removeItem(LOCAL_DATA_KEY);
-    onDataUpdate(fdaApprovals);
-    toast.success(`데이터가 소스 파일 기준 ${fdaApprovals.length}건으로 초기화되었습니다.`);
-  };
 
   return (
     <header className="mb-8">
@@ -50,15 +41,6 @@ export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
           
           <div className="flex items-center gap-2">
             <UsageGuide />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleResetData}
-              className="h-7 text-xs gap-1"
-            >
-              <RotateCcw className="h-3 w-3" />
-              데이터 초기화
-            </Button>
             <FdaValidation data={data} onDataUpdate={onDataUpdate} />
             <DataCommit data={data} />
             <FdaNovelDrugsExport data={data} filteredData={filteredData} />
