@@ -18,7 +18,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DrugApproval } from "@/data/fdaData";
-import { Eye, ExternalLink, Search, RotateCcw } from "lucide-react";
+import { Eye, ExternalLink, Search, RotateCcw, FilePlus, FileEdit } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// 최초승인/변경승인 여부 판단
+function isSupplementApproval(drug: DrugApproval): boolean {
+  const cat = drug.supplementCategory || "";
+  return cat.includes("SUPPL");
+}
 
 interface DrugTableProps {
   data: DrugApproval[];
@@ -224,7 +231,24 @@ export function DrugTable({ data }: DrugTableProps) {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1 items-center">
+                        {/* 최초/변경승인 아이콘 */}
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${isSupplementApproval(drug) ? "bg-blue-100 text-blue-600" : "bg-green-100 text-green-600"}`}>
+                                {isSupplementApproval(drug) ? (
+                                  <FileEdit className="h-3.5 w-3.5" />
+                                ) : (
+                                  <FilePlus className="h-3.5 w-3.5" />
+                                )}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{isSupplementApproval(drug) ? "변경승인 (SUPPL)" : "최초승인 (ORIG)"}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         {drug.isNovelDrug && (
                           <Badge variant="outline" className="text-xs border-violet-500 text-violet-600 bg-violet-50">
                             신약
