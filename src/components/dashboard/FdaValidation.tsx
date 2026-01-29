@@ -246,11 +246,11 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
 
   const handleFinalApply = () => {
     if (!onDataUpdate) {
-      toast.error("적용할 수 없습니다. (데이터 업데이트 핸들러가 없습니다)");
+      toast.error("❌ 적용할 수 없습니다. 잠시 후 다시 시도해주세요.");
       return;
     }
     if (!draftData || !hasChanges) {
-      // Nothing to commit
+      toast.info("ℹ️ 수정 사항이 없어 반영할 내용이 없습니다.");
       setIsOpen(false);
       return;
     }
@@ -258,7 +258,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
     onDataUpdate(draftData);
     setIsOpen(false);
     setHasChanges(false);
-    toast.success("수정 사항이 대시보드에 적용되었습니다. 엑셀 내보내기 시에도 반영됩니다.");
+    toast.success("✅ 수정 사항이 대시보드에 반영되었습니다. 엑셀 내보내기 시에도 적용됩니다.");
   };
 
   const invalidResults = results.filter((r) => !r.isValid);
@@ -386,13 +386,13 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
 
             {/* Final commit button: always visible when there are pending changes */}
             {hasChanges && (
-              <div className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2">
+              <div className="flex items-center justify-between rounded-md border-2 border-primary/40 bg-primary/5 px-3 py-2">
                 <div className="text-sm text-muted-foreground">
-                  수정 사항이 있습니다. 아래 <span className="font-medium text-foreground">적용</span>을 눌러 대시보드/엑셀에 반영하세요.
+                  ⚠️ 수정 사항이 임시 저장되었습니다. 아래 <span className="font-bold text-foreground">적용</span> 버튼을 눌러야 대시보드와 엑셀에 최종 반영됩니다.
                 </div>
-                <Button onClick={handleFinalApply} className="gap-2" disabled={!onDataUpdate}>
+                <Button onClick={handleFinalApply} variant="default" size="lg" className="gap-2" disabled={!onDataUpdate}>
                   <Check className="h-4 w-4" />
-                  적용
+                  적용하기
                 </Button>
               </div>
             )}

@@ -109,6 +109,13 @@ const isSupplementalApproval = (drug: DrugApproval): boolean => {
          notes.includes("Supplemental");
 };
 
+// Ensure English-only output for the English sheet.
+// If Korean characters are detected (unmapped), fall back to a safe English placeholder.
+const ensureEnglish = (value: string, fallback: string) => {
+  if (!value) return fallback;
+  return /[\u3131-\u318E\uAC00-\uD7A3]/.test(value) ? fallback : value;
+};
+
 export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -455,12 +462,18 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
       enSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
       exportData.forEach((drug) => {
-        const therapeuticAreaEn = therapeuticAreaEnMap[drug.therapeuticArea] || drug.therapeuticArea;
+        const therapeuticAreaEn = ensureEnglish(
+          therapeuticAreaEnMap[drug.therapeuticArea] || drug.therapeuticArea,
+          "Unmapped Therapeutic Area"
+        );
         const approvalTypeEn = getApprovalTypeEn(drug);
         
         // 순수 영문 요약 생성 (한글 notes 제외)
         let summaryEn = "";
-        const indication = therapeuticAreaEn.split(" - ")[1] || therapeuticAreaEn;
+        const indication = ensureEnglish(
+          therapeuticAreaEn.split(" - ")[1] || therapeuticAreaEn,
+          "unmapped indication"
+        );
         
         if (drug.isNovelDrug) {
           summaryEn = `Novel drug (${drug.activeIngredient}) approved for ${indication.toLowerCase()}.`;
@@ -522,21 +535,27 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
       const originalApprovals = exportData.filter(d => !isSupplementalApproval(d));
       
       originalApprovals.forEach((drug) => {
-        const therapeuticAreaEn = therapeuticAreaEnMap[drug.therapeuticArea] || drug.therapeuticArea;
+        const therapeuticAreaEn = ensureEnglish(
+          therapeuticAreaEnMap[drug.therapeuticArea] || drug.therapeuticArea,
+          "Unmapped Therapeutic Area"
+        );
         const approvalTypeEn = getApprovalTypeEn(drug);
         const summaryKr = drug.indicationFull + (drug.notes ? ` ${drug.notes}` : "");
         
-        // 영문 요약 생성 - 이미지 형식 참고
+        // 영문 요약 생성 - 순수 영문만 (한글 notes 제외)
         let summaryEn = "";
+        const indication = ensureEnglish(
+          therapeuticAreaEn.split(" - ")[1] || therapeuticAreaEn,
+          "unmapped indication"
+        );
+
         if (drug.isBiosimilar) {
-          const biosimilarTarget = drug.notes?.match(/(\w+)\s*바이오시밀러/)?.[1] || "";
-          const indication = therapeuticAreaEn.split(" - ")[1] || therapeuticAreaEn;
-          summaryEn = `${drug.activeIngredient} biosimilar for treatment of ${indication.toLowerCase()}. Biosimilar to ${biosimilarTarget || "reference product"}.`;
+          summaryEn = `Biosimilar (${drug.activeIngredient}) for ${indication.toLowerCase()}.`;
         } else if (drug.isNovelDrug) {
-          const indication = therapeuticAreaEn.split(" - ")[1] || therapeuticAreaEn;
-          summaryEn = `${drug.notes?.includes("FDA 최초 승인") ? "First FDA-approved treatment for " : ""}${indication.toLowerCase()}. ${drug.notes?.includes("Breakthrough Therapy") ? "With Breakthrough Therapy and Rare Pediatric Disease designations." : ""}`.trim();
+          summaryEn = `Novel drug (${drug.activeIngredient}) approved for ${indication.toLowerCase()}.`;
+          if (drug.isOrphanDrug) summaryEn += " Designated as Orphan Drug.";
         } else {
-          summaryEn = `${approvalTypeEn.replace("Original Approval", "").replace(/[()]/g, "").trim() || "New"} approval. ${drug.notes || ""}`;
+          summaryEn = `${drug.activeIngredient} approved for ${indication.toLowerCase()}.`;
         }
         
         const row = origSheet.addRow({
@@ -584,25 +603,24 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
       const supplementalApprovals = exportData.filter(d => isSupplementalApproval(d));
       
       supplementalApprovals.forEach((drug) => {
-        const therapeuticAreaEn = therapeuticAreaEnMap[drug.therapeuticArea] || drug.therapeuticArea;
+        const therapeuticAreaEn = ensureEnglish(
+          therapeuticAreaEnMap[drug.therapeuticArea] || drug.therapeuticArea,
+          "Unmapped Therapeutic Area"
+        );
         const approvalTypeEn = getApprovalTypeEn(drug);
         const summaryKr = drug.indicationFull + (drug.notes ? ` ${drug.notes}` : "");
         
-        // 영문 요약 생성 - 이미지 형식 참고
+        // 영문 요약 생성 - 순수 영문만 (한글 notes 제외)
         let summaryEn = "";
-        const indication = therapeuticAreaEn.split(" - ")[1] || therapeuticAreaEn;
-        
+        const indication = ensureEnglish(
+          therapeuticAreaEn.split(" - ")[1] || therapeuticAreaEn,
+          "unmapped indication"
+        );
+
         if (drug.isBiosimilar) {
           summaryEn = `Supplemental approval for ${drug.activeIngredient} biosimilar for ${indication.toLowerCase()}.`;
         } else {
-          // 구체적인 적응증/승인 내용 추출
-          if (drug.notes?.includes("적응증 추가") || drug.notes?.includes("적응증 확대")) {
-            summaryEn = `Supplemental approval for ${drug.activeIngredient} for ${indication.toLowerCase()}.`;
-          } else if (drug.notes?.includes("보충신청")) {
-            summaryEn = `Supplemental approval for ${drug.activeIngredient} ${drug.notes.includes("바이오시밀러") ? "biosimilar" : ""} for ${indication.toLowerCase()}.`;
-          } else {
-            summaryEn = `Supplemental approval for ${drug.activeIngredient} for ${indication.toLowerCase()}. ${drug.notes?.replace(/변경승인\s*-?\s*/g, "") || ""}`.trim();
-          }
+          summaryEn = `Supplemental approval for ${drug.activeIngredient} for ${indication.toLowerCase()}.`;
         }
         
         const row = supplSheet.addRow({
