@@ -11,6 +11,9 @@ import { Filters, FilterState, applyFilters } from "@/components/dashboard/Filte
 import { fdaApprovals, DrugApproval } from "@/data/fdaData";
 
 const LOCAL_DATA_KEY = "fda_approvals_overrides_v1";
+// Version key: update this when source data changes to invalidate old localStorage cache
+const SOURCE_DATA_VERSION = `v${fdaApprovals.length}`;
+const VERSION_KEY = "fda_source_version";
 
 function deduplicateData(data: DrugApproval[]): DrugApproval[] {
   const seen = new Set<string>();
@@ -28,6 +31,15 @@ function deduplicateData(data: DrugApproval[]): DrugApproval[] {
 
 function loadPersistedData(): DrugApproval[] | null {
   try {
+    // Check if source data version changed - if so, invalidate cache
+    const storedVersion = localStorage.getItem(VERSION_KEY);
+    if (storedVersion !== SOURCE_DATA_VERSION) {
+      // Source data was updated, clear old cache and use fresh source data
+      localStorage.removeItem(LOCAL_DATA_KEY);
+      localStorage.setItem(VERSION_KEY, SOURCE_DATA_VERSION);
+      return null;
+    }
+    
     const raw = localStorage.getItem(LOCAL_DATA_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
@@ -46,6 +58,7 @@ function loadPersistedData(): DrugApproval[] | null {
 function persistData(data: DrugApproval[]) {
   try {
     localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(data));
+    localStorage.setItem(VERSION_KEY, SOURCE_DATA_VERSION);
   } catch {
     // ignore
   }
