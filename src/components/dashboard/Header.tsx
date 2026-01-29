@@ -3,7 +3,8 @@ import { ExcelUpload } from "./ExcelUpload";
 import { FdaNovelDrugsExport } from "./FdaNovelDrugsExport";
 import { FdaValidation } from "./FdaValidation";
 import { UsageGuide } from "./UsageGuide";
-import { DrugApproval } from "@/data/fdaData";
+import { DataReset } from "./DataReset";
+import { DrugApproval, fdaApprovals } from "@/data/fdaData";
 
 interface HeaderProps {
   onDataUpdate: (data: DrugApproval[]) => void;
@@ -12,6 +13,9 @@ interface HeaderProps {
 }
 
 export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
+  const handleReset = () => {
+    onDataUpdate(fdaApprovals);
+  };
   return (
     <header className="mb-8">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
@@ -41,6 +45,7 @@ export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
             </div>
           </div>
           <UsageGuide />
+          <DataReset onReset={handleReset} />
           <FdaValidation data={data} onDataUpdate={onDataUpdate} />
           <FdaNovelDrugsExport data={data} filteredData={filteredData} />
           <ExcelUpload onDataUpdate={onDataUpdate} />
