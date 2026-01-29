@@ -1,73 +1,61 @@
-# Welcome to your Lovable project
+# US FDA 승인 전문의약품 대시보드
 
-## Project info
+미국 FDA 전문의약품 승인 데이터를 시각화하고 관리하는 대시보드 애플리케이션입니다.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 📋 기술 문서
 
-## How can I edit this code?
+- **[대시보드 구현 문서](docs/DASHBOARD_IMPLEMENTATION.md)** - 데이터 아키텍처, 핵심 컴포넌트, 개발 가이드
 
-There are several ways of editing your application.
+## 🚀 주요 기능
 
-**Use Lovable**
+- FDA 승인 의약품 데이터 시각화 (통계 카드, 차트)
+- 다양한 필터링 (기간, 유형, 치료영역, 항암제/바이오시밀러 등)
+- 통합 검색 (제품명, 성분명, 스폰서, 허가번호)
+- FDA API 연동 검증
+- 엑셀 내보내기/가져오기
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 🛠 기술 스택
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Frontend**: React 18 + TypeScript + Vite
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Charts**: Recharts
+- **Excel**: ExcelJS
+- **Backend**: Lovable Cloud (Edge Functions)
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## 📦 설치 및 실행
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# 저장소 클론
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# 디렉토리 이동
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
+# 의존성 설치
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 개발 서버 실행
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 📁 프로젝트 구조
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```
+src/
+├── pages/Index.tsx          # 메인 대시보드
+├── components/dashboard/    # 대시보드 컴포넌트
+├── data/fdaData.ts          # 기본 데이터
+└── integrations/supabase/   # 백엔드 연동
 
-**Use GitHub Codespaces**
+supabase/functions/          # Edge Functions
+docs/                        # 기술 문서
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🔗 링크
 
-## What technologies are used for this project?
+- **Preview**: https://id-preview--bd00b1a0-3925-46e7-b5b1-36e545a7d2ab.lovable.app
+- **Published**: https://us-fda-approval.lovable.app
 
-This project is built with:
+## 📄 라이선스
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+MIT License
