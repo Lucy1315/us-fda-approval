@@ -18,14 +18,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DrugApproval } from "@/data/fdaData";
-import { Eye, ExternalLink, Search, RotateCcw, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Eye, ExternalLink, Search, RotateCcw } from "lucide-react";
 
 interface DrugTableProps {
   data: DrugApproval[];
 }
-
-type SortField = "approvalDate" | "brandName" | "activeIngredient" | "sponsor" | "therapeuticArea" | null;
-type SortDirection = "asc" | "desc";
 
 function getFdaProductUrl(drug: DrugApproval): string {
   // Rule:
@@ -59,8 +56,6 @@ function getFdaProductUrl(drug: DrugApproval): string {
 export function DrugTable({ data }: DrugTableProps) {
   const [selectedDrug, setSelectedDrug] = useState<DrugApproval | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortField, setSortField] = useState<SortField>("approvalDate");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
@@ -74,67 +69,6 @@ export function DrugTable({ data }: DrugTableProps) {
       drug.ndaBlaNumber.toLowerCase().includes(term)
     );
   }, [data, searchTerm]);
-
-  // Handle column header click for sorting
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      // Toggle direction if same field
-      setSortDirection(prev => prev === "asc" ? "desc" : "asc");
-    } else {
-      // New field, default to ascending
-      setSortField(field);
-      setSortDirection("asc");
-    }
-  };
-
-  // Reset sorting to default
-  const handleResetSort = () => {
-    setSortField("approvalDate");
-    setSortDirection("asc");
-  };
-
-  // Get sort icon for column header
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="h-3.5 w-3.5 ml-1 text-muted-foreground/50" />;
-    }
-    return sortDirection === "asc" 
-      ? <ArrowUp className="h-3.5 w-3.5 ml-1 text-primary" />
-      : <ArrowDown className="h-3.5 w-3.5 ml-1 text-primary" />;
-  };
-
-  // Sort data based on current sort field and direction
-  const sorted = useMemo(() => {
-    return [...filteredData].sort((a, b) => {
-      let comparison = 0;
-      
-      if (sortField) {
-        if (sortField === "approvalDate") {
-          // Date comparison: convert to Date objects for accurate sorting
-          const dateA = new Date(a.approvalDate).getTime();
-          const dateB = new Date(b.approvalDate).getTime();
-          comparison = dateA - dateB;
-        } else {
-          const aVal = a[sortField]?.toString().toLowerCase() || "";
-          const bVal = b[sortField]?.toString().toLowerCase() || "";
-          comparison = aVal.localeCompare(bVal);
-        }
-      }
-      
-      // If primary sort is equal, use secondary sorts for stability
-      if (comparison === 0) {
-        const dateA = new Date(a.approvalDate).getTime();
-        const dateB = new Date(b.approvalDate).getTime();
-        const byDate = dateA - dateB;
-        if (byDate !== 0) return sortDirection === "asc" ? byDate : -byDate;
-        const byApp = a.applicationNo.localeCompare(b.applicationNo);
-        if (byApp !== 0) return byApp;
-        return (a.supplementCategory || "").localeCompare(b.supplementCategory || "");
-      }
-      
-      return sortDirection === "asc" ? comparison : -comparison;
-    });
-  }, [filteredData, sortField, sortDirection]);
 
   if (data.length === 0) {
     return (
@@ -185,57 +119,17 @@ export function DrugTable({ data }: DrugTableProps) {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[100px]">
-                    <button 
-                      onClick={() => handleSort("approvalDate")}
-                      className="flex items-center font-medium hover:text-primary transition-colors"
-                    >
-                      승인일
-                      {getSortIcon("approvalDate")}
-                    </button>
-                  </TableHead>
-                  <TableHead className="w-[150px]">
-                    <button 
-                      onClick={() => handleSort("brandName")}
-                      className="flex items-center font-medium hover:text-primary transition-colors"
-                    >
-                      제품명
-                      {getSortIcon("brandName")}
-                    </button>
-                  </TableHead>
-                  <TableHead className="w-[150px]">
-                    <button 
-                      onClick={() => handleSort("activeIngredient")}
-                      className="flex items-center font-medium hover:text-primary transition-colors"
-                    >
-                      주성분
-                      {getSortIcon("activeIngredient")}
-                    </button>
-                  </TableHead>
-                  <TableHead className="w-[140px]">
-                    <button 
-                      onClick={() => handleSort("sponsor")}
-                      className="flex items-center font-medium hover:text-primary transition-colors"
-                    >
-                      제약사
-                      {getSortIcon("sponsor")}
-                    </button>
-                  </TableHead>
-                  <TableHead className="w-[130px]">
-                    <button 
-                      onClick={() => handleSort("therapeuticArea")}
-                      className="flex items-center font-medium hover:text-primary transition-colors"
-                    >
-                      치료영역
-                      {getSortIcon("therapeuticArea")}
-                    </button>
-                  </TableHead>
+                  <TableHead className="w-[100px]">승인일</TableHead>
+                  <TableHead className="w-[150px]">제품명</TableHead>
+                  <TableHead className="w-[150px]">주성분</TableHead>
+                  <TableHead className="w-[140px]">제약사</TableHead>
+                  <TableHead className="w-[130px]">치료영역</TableHead>
                   <TableHead className="w-[150px]">구분</TableHead>
                   <TableHead className="w-[80px]">상세</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sorted.map((drug) => (
+                {filteredData.map((drug) => (
                   <TableRow
                     key={`${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`}
                     className="hover:bg-muted/50 transition-colors"
