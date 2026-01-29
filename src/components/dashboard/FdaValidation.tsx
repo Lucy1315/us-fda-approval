@@ -141,6 +141,23 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
     return `https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${applicationNo}`;
   };
 
+  const isDrugsAtFdaUrl = (url?: string) => {
+    if (!url) return false;
+    return /accessdata\.fda\.gov\/scripts\/cder\/daf\/index\.cfm\?event=overview\.process&ApplNo=/i.test(url);
+  };
+
+  // Local helper to remove accidental duplicates before committing to the dashboard.
+  // (Same logic as Index.tsx: applicationNo + approvalDate + brandName + supplementCategory)
+  const deduplicate = (items: DrugApproval[]) => {
+    const seen = new Set<string>();
+    return items.filter((drug) => {
+      const key = `${drug.applicationNo}-${drug.approvalDate}-${drug.brandName}-${drug.supplementCategory || ""}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
   const handleApplyFix = (result: ValidationResult) => {
     if (!editingItem) return;
 
@@ -151,8 +168,14 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
     const updatedData = base.map((drug) => {
       if (drug.applicationNo === result.applicationNo) {
         const applicationType = drug.applicationType;
-        // Update fdaUrl only if the drug is not a CBER product (CBER products have manual URLs)
-        const newFdaUrl = drug.isCberProduct ? drug.fdaUrl : generateFdaUrl(cleanedAppNo);
+        // Update fdaUrl cautiously:
+        // - CBER products: keep their manual URL
+        // - Non-CBER: only rewrite if it was already a Drugs@FDA URL (or missing)
+        const newFdaUrl = drug.isCberProduct
+          ? drug.fdaUrl
+          : (drug.fdaUrl && !isDrugsAtFdaUrl(drug.fdaUrl))
+            ? drug.fdaUrl
+            : generateFdaUrl(cleanedAppNo);
         return {
           ...drug,
           brandName: editingItem.newBrandName,
@@ -263,7 +286,9 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       return;
     }
 
-    onDataUpdate(draftData);
+    // Ensure a new reference, deduplicate, and avoid any accidental mutation issues.
+    const committed = deduplicate(draftData).map((d) => ({ ...d }));
+    onDataUpdate(committed);
     setIsOpen(false);
     setHasChanges(false);
     toast.success("✅ 수정 사항이 대시보드에 반영되었습니다. 엑셀 내보내기 시에도 적용됩니다.");
