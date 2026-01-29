@@ -188,7 +188,15 @@ export function DrugTable({ data }: DrugTableProps) {
                   <TableHead className="w-[150px]">주성분</TableHead>
                   <TableHead className="w-[140px]">제약사</TableHead>
                   <TableHead className="w-[130px]">치료영역</TableHead>
-                  <TableHead className="w-[150px]">구분</TableHead>
+                  <TableHead className="w-[200px]">
+                    <div className="flex items-center gap-2">
+                      <span>구분</span>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        (<FilePlus className="h-3 w-3 text-green-600 inline" />:최초
+                        <FileEdit className="h-3 w-3 text-blue-600 inline" />:변경)
+                      </span>
+                    </div>
+                  </TableHead>
                   <TableHead className="w-[80px]">상세</TableHead>
                 </TableRow>
               </TableHeader>
