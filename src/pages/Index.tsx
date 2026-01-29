@@ -11,8 +11,14 @@ import { Filters, FilterState, applyFilters } from "@/components/dashboard/Filte
 import { fdaApprovals, DrugApproval } from "@/data/fdaData";
 
 const LOCAL_DATA_KEY = "fda_approvals_overrides_v1";
-// Version key: update this when source data changes to invalidate old localStorage cache
-const SOURCE_DATA_VERSION = `v${fdaApprovals.length}`;
+// Version key: creates a fingerprint from data length + first/last items to detect any changes
+const createDataFingerprint = () => {
+  const first = fdaApprovals[0];
+  const last = fdaApprovals[fdaApprovals.length - 1];
+  const allIds = fdaApprovals.map(d => d.applicationNo).join(',');
+  return `v2-${fdaApprovals.length}-${first?.applicationNo || ''}-${last?.applicationNo || ''}-${allIds.length}`;
+};
+const SOURCE_DATA_VERSION = createDataFingerprint();
 const VERSION_KEY = "fda_source_version";
 
 function deduplicateData(data: DrugApproval[]): DrugApproval[] {
