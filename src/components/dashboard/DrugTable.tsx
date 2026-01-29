@@ -87,6 +87,12 @@ export function DrugTable({ data }: DrugTableProps) {
     }
   };
 
+  // Reset sorting to default
+  const handleResetSort = () => {
+    setSortField("approvalDate");
+    setSortDirection("asc");
+  };
+
   // Get sort icon for column header
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) {
@@ -184,6 +190,16 @@ export function DrugTable({ data }: DrugTableProps) {
               <Badge variant="outline" className="text-xs">
                 {sortDirection === "asc" ? "오름차순 ↑" : "내림차순 ↓"}
               </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResetSort}
+                disabled={sortField === "approvalDate" && sortDirection === "asc"}
+                className="h-7 px-2 text-xs"
+              >
+                <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                정렬 초기화
+              </Button>
               <span className="text-xs ml-auto">
                 * 컬럼 헤더를 클릭하여 정렬
               </span>
