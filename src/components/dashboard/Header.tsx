@@ -3,7 +3,6 @@ import { ExcelUpload } from "./ExcelUpload";
 import { FdaNovelDrugsExport } from "./FdaNovelDrugsExport";
 import { FdaValidation } from "./FdaValidation";
 import { UsageGuide } from "./UsageGuide";
-import { DataCommit } from "./DataCommit";
 import { AdminAuth } from "./AdminAuth";
 import { DrugApproval } from "@/data/fdaData";
 
@@ -51,7 +50,6 @@ export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCl
           <div className="flex items-center gap-2">
             <UsageGuide />
             <FdaValidation data={data} onDataUpdate={onDataUpdate} />
-            <DataCommit data={data} />
             <FdaNovelDrugsExport data={data} filteredData={filteredData} />
             <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} />
             <AdminAuth
