@@ -18,16 +18,25 @@ export function useAuth() {
     isAdmin: false,
   });
 
-  // Check if user is admin
-  const checkAdminRole = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
+  // Check if user is admin (with caching)
+  const checkAdminRole = useCallback(async (userId: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
 
-    return !!data;
+      if (error) {
+        console.error("Admin role check error:", error);
+        return false;
+      }
+
+      return !!data;
+    } catch {
+      return false;
+    }
   }, []);
 
   // Sign up
@@ -108,35 +117,41 @@ export function useAuth() {
     // Set up listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const user = session?.user ?? null;
-      let isAdmin = false;
-
-      if (user) {
-        isAdmin = await checkAdminRole(user.id);
-      }
-
-      setState({
+      
+      // Update state immediately with user info, then check admin role
+      setState(prev => ({
+        ...prev,
         user,
         session,
         isLoading: false,
-        isAdmin,
-      });
+      }));
+
+      // Check admin role in background
+      if (user) {
+        const isAdmin = await checkAdminRole(user.id);
+        setState(prev => ({ ...prev, isAdmin }));
+      } else {
+        setState(prev => ({ ...prev, isAdmin: false }));
+      }
     });
 
     // THEN check current session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const user = session?.user ?? null;
-      let isAdmin = false;
-
-      if (user) {
-        isAdmin = await checkAdminRole(user.id);
-      }
-
-      setState({
+      
+      // Update state immediately
+      setState(prev => ({
+        ...prev,
         user,
         session,
         isLoading: false,
-        isAdmin,
-      });
+      }));
+
+      // Check admin role in background
+      if (user) {
+        const isAdmin = await checkAdminRole(user.id);
+        setState(prev => ({ ...prev, isAdmin }));
+      }
     });
 
     return () => {
