@@ -15,7 +15,8 @@ interface HeaderProps {
 export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
   return (
     <header className="mb-8">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="flex flex-col gap-4">
+        {/* 타이틀 영역 */}
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-xl bg-primary/10 shrink-0">
             <FileText className="h-7 w-7 text-primary" />
@@ -24,23 +25,21 @@ export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
             <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground whitespace-nowrap">
               US FDA 승인 전문의약품
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              미국 FDA 전문의약품 승인 데이터 대시보드
-            </p>
+            <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Database className="h-3.5 w-3.5" />
+                <span>데이터: <strong className="text-foreground">{data.length}건</strong></span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                <span>수집일: <strong className="text-foreground">2026-01-28</strong></span>
+              </div>
+            </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Database className="h-4 w-4" />
-              <span>데이터: <strong className="text-foreground">{data.length}건</strong></span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <span>수집일: <strong className="text-foreground">2026-01-28</strong></span>
-            </div>
-          </div>
+        {/* 액션 버튼 영역 */}
+        <div className="flex flex-wrap items-center gap-2">
           <UsageGuide />
           <FdaValidation data={data} onDataUpdate={onDataUpdate} />
           <DataCommit data={data} />
