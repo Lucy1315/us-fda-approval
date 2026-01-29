@@ -15,8 +15,9 @@ const LOCAL_DATA_KEY = "fda_approvals_overrides_v1";
 function deduplicateData(data: DrugApproval[]): DrugApproval[] {
   const seen = new Set<string>();
   return data.filter((drug) => {
-    // Create unique key based on applicationNo, approvalDate, brandName, and supplementCategory
-    const key = `${drug.applicationNo}-${drug.approvalDate}-${drug.brandName}-${drug.supplementCategory || ""}`;
+    // Create unique key based on applicationNo, approvalDate, and supplementCategory only
+    // This ensures products like MEN'S ROGAINE / WOMEN'S ROGAINE with same NDA are consolidated
+    const key = `${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`;
     if (seen.has(key)) {
       return false;
     }
@@ -66,9 +67,11 @@ const Index = () => {
   });
 
   const filteredData = useMemo(() => {
-    const next = applyFilters(data, filters);
+    const filtered = applyFilters(data, filters);
+    // Deduplicate again to ensure no duplicates slip through from localStorage overrides
+    const deduped = deduplicateData(filtered);
     // Always show the detailed list in chronological (oldest -> newest) order.
-    return [...next].sort((a, b) => a.approvalDate.localeCompare(b.approvalDate));
+    return [...deduped].sort((a, b) => a.approvalDate.localeCompare(b.approvalDate));
   }, [data, filters]);
 
   const stats = useMemo(() => {
