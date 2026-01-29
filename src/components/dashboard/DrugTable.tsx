@@ -29,16 +29,19 @@ function getFdaProductUrl(drug: DrugApproval): string {
   // 1) Default to Drugs@FDA (CDER) lookup for consistency.
   // 2) Add explicit exceptions ONLY for products that are not in Drugs@FDA
   //    (e.g., CBER-regulated tissue / cellular & gene therapy products).
-  const cberByApplicationNo: Record<string, string> = {
-    // AVANCE: Tissue product (CBER) - BLA 761544
-    "761544": "https://www.fda.gov/vaccines-blood-biologics/avance",
-    // BREYANZI: Cellular/Gene Therapy (CBER) - BLA 125714
-    "125714": "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/breyanzi-lisocabtagene-maraleucel",
-    // WASKYRA: Cellular/Gene Therapy (CBER) - BLA 125832
-    "125832": "https://www.fda.gov/vaccines-blood-biologics/waskyra",
+  // Use brandName as key to prevent URL breakage when applicationNo is corrected via FDA validation.
+  const cberByBrandName: Record<string, string> = {
+    // AVANCE: Tissue product (CBER)
+    "AVANCE": "https://www.fda.gov/vaccines-blood-biologics/avance",
+    // BREYANZI: Cellular/Gene Therapy (CBER)
+    "BREYANZI": "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/breyanzi-lisocabtagene-maraleucel",
+    // WASKYRA: Cellular/Gene Therapy (CBER)
+    "WASKYRA": "https://www.fda.gov/vaccines-blood-biologics/waskyra",
   };
 
-  if (cberByApplicationNo[drug.applicationNo]) return cberByApplicationNo[drug.applicationNo];
+  // Check by brandName (case-insensitive, uppercase normalized)
+  const normalizedBrandName = drug.brandName.toUpperCase().trim();
+  if (cberByBrandName[normalizedBrandName]) return cberByBrandName[normalizedBrandName];
 
   // If the dataset provides a Drugs@FDA URL explicitly, it's safe to use.
   // (Avoid using non-Drugs@FDA press-release pages here to prevent mismatches/changes.)
