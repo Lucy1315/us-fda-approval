@@ -457,8 +457,26 @@ export function FdaNovelDrugsExport({ data, filteredData }: FdaNovelDrugsExportP
       exportData.forEach((drug) => {
         const therapeuticAreaEn = therapeuticAreaEnMap[drug.therapeuticArea] || drug.therapeuticArea;
         const approvalTypeEn = getApprovalTypeEn(drug);
-        // 간략한 영문 요약 생성
-        const summaryEn = `${drug.isNovelDrug ? "Novel drug" : drug.isBiosimilar ? "Biosimilar" : "Drug"} for ${therapeuticAreaEn.toLowerCase()}. ${drug.notes || ""}`.trim();
+        
+        // 순수 영문 요약 생성 (한글 notes 제외)
+        let summaryEn = "";
+        const indication = therapeuticAreaEn.split(" - ")[1] || therapeuticAreaEn;
+        
+        if (drug.isNovelDrug) {
+          summaryEn = `Novel drug (${drug.activeIngredient}) approved for ${indication.toLowerCase()}.`;
+          if (drug.isOrphanDrug) {
+            summaryEn += " Designated as Orphan Drug.";
+          }
+        } else if (drug.isBiosimilar) {
+          summaryEn = `Biosimilar (${drug.activeIngredient}) approved for ${indication.toLowerCase()}.`;
+        } else {
+          const isSuppl = isSupplementalApproval(drug);
+          if (isSuppl) {
+            summaryEn = `Supplemental approval for ${drug.activeIngredient} for ${indication.toLowerCase()}.`;
+          } else {
+            summaryEn = `${drug.activeIngredient} approved for ${indication.toLowerCase()}.`;
+          }
+        }
         
         const row = enSheet.addRow({
           approvalDate: drug.approvalDate,
