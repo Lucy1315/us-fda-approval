@@ -15,19 +15,19 @@ interface HeaderProps {
 export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
   return (
     <header className="mb-8">
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <FileText className="h-6 w-6 text-primary" />
-            </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-primary/10 shrink-0">
+            <FileText className="h-7 w-7 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground whitespace-nowrap">
               US FDA 승인 전문의약품
             </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              미국 FDA 전문의약품 승인 데이터 대시보드
+            </p>
           </div>
-          <p className="text-muted-foreground">
-            미국 FDA 전문의약품 승인 데이터 대시보드
-          </p>
         </div>
         
         <div className="flex items-center gap-4">
