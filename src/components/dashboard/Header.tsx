@@ -3,6 +3,7 @@ import { ExcelUpload } from "./ExcelUpload";
 import { FdaNovelDrugsExport } from "./FdaNovelDrugsExport";
 import { FdaValidation } from "./FdaValidation";
 import { UsageGuide } from "./UsageGuide";
+import { DataCommit } from "./DataCommit";
 import { DrugApproval } from "@/data/fdaData";
 
 interface HeaderProps {
@@ -42,6 +43,7 @@ export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
           </div>
           <UsageGuide />
           <FdaValidation data={data} onDataUpdate={onDataUpdate} />
+          <DataCommit data={data} />
           <FdaNovelDrugsExport data={data} filteredData={filteredData} />
           <ExcelUpload onDataUpdate={onDataUpdate} />
         </div>
