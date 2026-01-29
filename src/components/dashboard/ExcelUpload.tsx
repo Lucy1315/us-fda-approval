@@ -16,9 +16,36 @@ import ExcelJS from "exceljs";
 
 interface ExcelUploadProps {
   onDataUpdate: (data: DrugApproval[]) => void;
+  currentData: DrugApproval[];
 }
 
-export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
+// Merge new data with existing data, deduplicating by applicationNo + approvalDate + supplementCategory
+function mergeData(existing: DrugApproval[], incoming: DrugApproval[]): DrugApproval[] {
+  const seen = new Set<string>();
+  const result: DrugApproval[] = [];
+  
+  // Add existing data first
+  for (const drug of existing) {
+    const key = `${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(drug);
+    }
+  }
+  
+  // Add new data (only if not duplicate)
+  for (const drug of incoming) {
+    const key = `${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(drug);
+    }
+  }
+  
+  return result;
+}
+
+export function ExcelUpload({ onDataUpdate, currentData }: ExcelUploadProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -157,10 +184,12 @@ export function ExcelUpload({ onDataUpdate }: ExcelUploadProps) {
 
   const handleApply = () => {
     if (parsedData && parsedData.length > 0) {
-      onDataUpdate(parsedData);
+      const merged = mergeData(currentData, parsedData);
+      const addedCount = merged.length - currentData.length;
+      onDataUpdate(merged);
       toast({
         title: "적용 완료",
-        description: `${parsedData.length}건의 데이터가 대시보드에 반영되었습니다.`,
+        description: `신규 ${addedCount}건 추가, 총 ${merged.length}건 데이터가 대시보드에 반영되었습니다.`,
       });
       setIsOpen(false);
       setFileName(null);
