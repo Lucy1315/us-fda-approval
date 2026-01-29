@@ -192,7 +192,7 @@ export function DrugTable({ data }: DrugTableProps) {
                     <div className="flex items-center gap-2">
                       <span>구분</span>
                       <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        (<FilePlus className="h-3 w-3 text-green-600 inline" />:최초
+                        (<FilePlus className="h-3 w-3 text-violet-600 inline" />:최초
                         <FileEdit className="h-3 w-3 text-blue-600 inline" />:변경)
                       </span>
                     </div>
@@ -244,7 +244,7 @@ export function DrugTable({ data }: DrugTableProps) {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${isSupplementApproval(drug) ? "bg-blue-100 text-blue-600" : "bg-green-100 text-green-600"}`}>
+                              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${isSupplementApproval(drug) ? "bg-blue-100 text-blue-600" : "bg-violet-100 text-violet-600"}`}>
                                 {isSupplementApproval(drug) ? (
                                   <FileEdit className="h-3.5 w-3.5" />
                                 ) : (
