@@ -136,6 +136,11 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
     return appNo.replace(/^(BLA|NDA)\s+/i, "").trim();
   };
 
+  // Helper: Generate FDA URL based on application number (Drugs@FDA)
+  const generateFdaUrl = (applicationNo: string): string => {
+    return `https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${applicationNo}`;
+  };
+
   const handleApplyFix = (result: ValidationResult) => {
     if (!editingItem) return;
 
@@ -146,11 +151,14 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
     const updatedData = base.map((drug) => {
       if (drug.applicationNo === result.applicationNo) {
         const applicationType = drug.applicationType;
+        // Update fdaUrl only if the drug is not a CBER product (CBER products have manual URLs)
+        const newFdaUrl = drug.isCberProduct ? drug.fdaUrl : generateFdaUrl(cleanedAppNo);
         return {
           ...drug,
           brandName: editingItem.newBrandName,
           applicationNo: cleanedAppNo,
           ndaBlaNumber: `${applicationType} ${cleanedAppNo}`,
+          fdaUrl: newFdaUrl,
         };
       }
       return drug;
@@ -162,7 +170,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
     setResults((prev) =>
       prev.map((r) =>
         r.applicationNo === result.applicationNo
-          ? { ...r, brandName: editingItem.newBrandName, isValid: true }
+          ? { ...r, brandName: editingItem.newBrandName, applicationNo: cleanedAppNo, isValid: true }
           : r
       )
     );
@@ -196,7 +204,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
     );
 
     setHasChanges(true);
-    toast.success(`${result.brandName} → ${fdaBrandName} 수정 완료`);
+    toast.success(`${result.brandName} → ${fdaBrandName} 수정 완료 (적용하기 버튼을 눌러 최종 반영)`);
   };
 
   const handleApplyAllFixes = () => {
@@ -241,7 +249,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
     );
 
     setHasChanges(true);
-    toast.success(`${appliedFixes.length}건의 수정이 완료되었습니다.`);
+    toast.success(`${appliedFixes.length}건의 수정이 완료되었습니다. 적용하기 버튼을 눌러 최종 반영하세요.`);
   };
 
   const handleFinalApply = () => {
