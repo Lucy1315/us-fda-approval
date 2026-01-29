@@ -67,12 +67,27 @@ export function useCloudData() {
     isFromCloud: false,
   });
 
-  // Load data from cloud
+  // Load data from cloud with timeout
   const loadFromCloud = useCallback(async () => {
     try {
-      const { data: response, error } = await supabase.functions.invoke("persist-fda-data", {
+      // Create a timeout promise
+      const timeoutPromise = new Promise<null>((_, reject) => {
+        setTimeout(() => reject(new Error("Cloud load timeout")), 8000);
+      });
+
+      // Race between cloud load and timeout
+      const loadPromise = supabase.functions.invoke("persist-fda-data", {
         body: { action: "load" },
       });
+
+      const result = await Promise.race([loadPromise, timeoutPromise]);
+      
+      if (!result || typeof result !== 'object') {
+        console.warn("Cloud load returned invalid result");
+        return null;
+      }
+
+      const { data: response, error } = result as { data: any; error: any };
 
       if (error) {
         console.error("Cloud load error:", error);
