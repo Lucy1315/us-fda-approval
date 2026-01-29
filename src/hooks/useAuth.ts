@@ -18,24 +18,16 @@ export function useAuth() {
     isAdmin: false,
   });
 
-  // Check if user is admin using the database function (bypasses RLS)
-  const checkAdminRole = useCallback(async (userId: string): Promise<boolean> => {
-    try {
-      // Use the has_role database function which is SECURITY DEFINER
-      const { data, error } = await supabase
-        .rpc("has_role", { _user_id: userId, _role: "admin" });
+  // Check if user is admin
+  const checkAdminRole = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
 
-      if (error) {
-        console.error("Admin role check error:", error.message);
-        return false;
-      }
-
-      console.log("Admin check result for", userId, ":", data);
-      return data === true;
-    } catch (err) {
-      console.error("Admin check exception:", err);
-      return false;
-    }
+    return !!data;
   }, []);
 
   // Sign up
@@ -57,7 +49,7 @@ export function useAuth() {
     return { success: true, data };
   }, []);
 
-  // Sign in - immediately check admin role after successful login
+  // Sign in
   const signIn = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -69,60 +61,17 @@ export function useAuth() {
       return { success: false, error };
     }
 
-    // Immediately check admin role and update state
-    if (data.user) {
-      const isAdmin = await checkAdminRole(data.user.id);
-      setState(prev => ({
-        ...prev,
-        user: data.user,
-        session: data.session,
-        isAdmin,
-        isLoading: false,
-      }));
-      
-      if (isAdmin) {
-        toast.success("✅ 관리자로 로그인되었습니다.");
-      } else {
-        toast.success("로그인 성공");
-      }
-    }
-
     return { success: true, data };
-  }, [checkAdminRole]);
+  }, []);
 
-  // Sign out - explicitly reset state with global scope
+  // Sign out
   const signOut = useCallback(async () => {
-    try {
-      // Use global scope to ensure complete sign out
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-      
-      if (error) {
-        console.error("SignOut error:", error.message);
-        toast.error(error.message);
-        return { success: false, error };
-      }
-      
-      // Explicitly reset state after successful signout
-      setState({
-        user: null,
-        session: null,
-        isLoading: false,
-        isAdmin: false,
-      });
-      
-      toast.success("로그아웃 되었습니다.");
-      return { success: true };
-    } catch (err) {
-      console.error("SignOut exception:", err);
-      // Still reset state on error
-      setState({
-        user: null,
-        session: null,
-        isLoading: false,
-        isAdmin: false,
-      });
-      return { success: false, error: err };
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error(error.message);
+      return { success: false, error };
     }
+    return { success: true };
   }, []);
 
   // Bootstrap admin (first user becomes admin)
@@ -159,41 +108,35 @@ export function useAuth() {
     // Set up listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const user = session?.user ?? null;
-      
-      // Update state immediately with user info, then check admin role
-      setState(prev => ({
-        ...prev,
+      let isAdmin = false;
+
+      if (user) {
+        isAdmin = await checkAdminRole(user.id);
+      }
+
+      setState({
         user,
         session,
         isLoading: false,
-      }));
-
-      // Check admin role in background
-      if (user) {
-        const isAdmin = await checkAdminRole(user.id);
-        setState(prev => ({ ...prev, isAdmin }));
-      } else {
-        setState(prev => ({ ...prev, isAdmin: false }));
-      }
+        isAdmin,
+      });
     });
 
     // THEN check current session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const user = session?.user ?? null;
-      
-      // Update state immediately
-      setState(prev => ({
-        ...prev,
+      let isAdmin = false;
+
+      if (user) {
+        isAdmin = await checkAdminRole(user.id);
+      }
+
+      setState({
         user,
         session,
         isLoading: false,
-      }));
-
-      // Check admin role in background
-      if (user) {
-        const isAdmin = await checkAdminRole(user.id);
-        setState(prev => ({ ...prev, isAdmin }));
-      }
+        isAdmin,
+      });
     });
 
     return () => {

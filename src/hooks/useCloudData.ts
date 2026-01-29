@@ -19,35 +19,6 @@ const createDataFingerprint = (data: DrugApproval[]): string => {
   return `v2-${data.length}-${first?.applicationNo || ""}-${last?.applicationNo || ""}-${idsLen}`;
 };
 
-// Normalize cloud data to ensure all required fields exist
-function normalizeCloudData(item: Record<string, unknown>): DrugApproval {
-  return {
-    applicationNo: (item.applicationNo as string) || "",
-    applicationType: (item.applicationType as "NDA" | "BLA") || "NDA",
-    brandName: (item.brandName as string) || "",
-    brandNameKorean: (item.brandNameKorean as string) || (item.brandName as string) || "",
-    activeIngredient: (item.activeIngredient as string) || "",
-    activeIngredientKorean: (item.activeIngredientKorean as string) || (item.activeIngredient as string) || "",
-    sponsor: (item.sponsor as string) || "",
-    approvalDate: (item.approvalDate as string) || "",
-    therapeuticArea: (item.therapeuticArea as string) || "",
-    indication: (item.indication as string) || (item.indicationFull as string) || "",
-    indicationKorean: (item.indicationKorean as string) || (item.indicationFull as string) || "",
-    isOncology: (item.isOncology as boolean) ?? false,
-    isBiosimilar: (item.isBiosimilar as boolean) ?? false,
-    isNovelDrug: (item.isNovelDrug as boolean) ?? false,
-    isOrphanDrug: (item.isOrphanDrug as boolean) ?? false,
-    ndaBlaNumber: (item.ndaBlaNumber as string) || "",
-    fdaUrl: (item.fdaUrl as string) || "",
-    supplementCategory: item.supplementCategory as string | undefined,
-    isCberProduct: (item.isCberProduct as boolean) ?? false,
-    notes: item.notes as string | undefined,
-    approvalMonth: item.approvalMonth as string | undefined,
-    approvalType: item.approvalType as string | undefined,
-    indicationFull: item.indicationFull as string | undefined,
-  } as DrugApproval;
-}
-
 function deduplicateData(items: DrugApproval[]): DrugApproval[] {
   const seen = new Set<string>();
   return items.filter((drug) => {
@@ -67,27 +38,12 @@ export function useCloudData() {
     isFromCloud: false,
   });
 
-  // Load data from cloud with timeout
+  // Load data from cloud
   const loadFromCloud = useCallback(async () => {
     try {
-      // Create a timeout promise
-      const timeoutPromise = new Promise<null>((_, reject) => {
-        setTimeout(() => reject(new Error("Cloud load timeout")), 8000);
-      });
-
-      // Race between cloud load and timeout
-      const loadPromise = supabase.functions.invoke("persist-fda-data", {
+      const { data: response, error } = await supabase.functions.invoke("persist-fda-data", {
         body: { action: "load" },
       });
-
-      const result = await Promise.race([loadPromise, timeoutPromise]);
-      
-      if (!result || typeof result !== 'object') {
-        console.warn("Cloud load returned invalid result");
-        return null;
-      }
-
-      const { data: response, error } = result as { data: any; error: any };
 
       if (error) {
         console.error("Cloud load error:", error);
@@ -95,9 +51,8 @@ export function useCloudData() {
       }
 
       if (response?.success && response.data && response.data.length > 0) {
-        const normalizedData = (response.data as Record<string, unknown>[]).map(normalizeCloudData);
         return {
-          data: deduplicateData(normalizedData),
+          data: deduplicateData(response.data as DrugApproval[]),
           version: response.version,
           updatedAt: response.updatedAt,
         };

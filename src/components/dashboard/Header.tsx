@@ -145,8 +145,8 @@ export function Header({
               <div className="flex items-center gap-2">
                 {isAdmin ? (
                   <>
-                    <span className="text-xs text-primary font-medium flex items-center gap-1 bg-primary/10 px-2 py-1 rounded">
-                      <Shield className="h-3 w-3" />
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Shield className="h-3 w-3 text-primary" />
                       관리자
                     </span>
                     <Button
@@ -159,12 +159,18 @@ export function Header({
                       저장 {cloudVersion ? `(v${cloudVersion})` : ""}
                     </Button>
                   </>
-                ) : (
-                  <span className="text-xs text-muted-foreground">
-                    {user.email?.split("@")[0]}
-                  </span>
-                )}
-                <Button variant="ghost" size="sm" onClick={handleSignOut} title="로그아웃">
+                ) : needsAdminBootstrap ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBootstrapAdmin}
+                    className="gap-2"
+                  >
+                    <Shield className="h-4 w-4" />
+                    관리자 권한 등록
+                  </Button>
+                ) : null}
+                <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1">
                   <LogOut className="h-4 w-4" />
                 </Button>
               </div>
