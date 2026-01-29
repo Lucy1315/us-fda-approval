@@ -11,12 +11,12 @@ import { Filters, FilterState, applyFilters } from "@/components/dashboard/Filte
 import { fdaApprovals, DrugApproval } from "@/data/fdaData";
 
 const LOCAL_DATA_KEY = "fda_approvals_overrides_v1";
-// Version key: creates a fingerprint from data length + first/last items to detect any changes
+// Version key: creates a fingerprint from source data to invalidate stale localStorage overrides
 const createDataFingerprint = () => {
   const first = fdaApprovals[0];
   const last = fdaApprovals[fdaApprovals.length - 1];
-  const allIds = fdaApprovals.map(d => d.applicationNo).join(',');
-  return `v2-${fdaApprovals.length}-${first?.applicationNo || ''}-${last?.applicationNo || ''}-${allIds.length}`;
+  const idsLen = fdaApprovals.reduce((acc, d) => acc + (d.applicationNo?.length || 0), 0);
+  return `v2-${fdaApprovals.length}-${first?.applicationNo || ""}-${last?.applicationNo || ""}-${idsLen}`;
 };
 const SOURCE_DATA_VERSION = createDataFingerprint();
 const VERSION_KEY = "fda_source_version";
@@ -63,6 +63,10 @@ function loadPersistedData(): DrugApproval[] | null {
 
 function persistData(data: DrugApproval[]) {
   try {
+    // Only persist if the current source version matches.
+    // This prevents re-saving stale state during/after a source-data update.
+    const storedVersion = localStorage.getItem(VERSION_KEY);
+    if (storedVersion !== SOURCE_DATA_VERSION) return;
     localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(data));
     localStorage.setItem(VERSION_KEY, SOURCE_DATA_VERSION);
   } catch {
@@ -136,6 +140,22 @@ const Index = () => {
   const handleDataUpdate = (newData: DrugApproval[]) => {
     setData(newData);
   };
+
+  // If the bundled source data changed (e.g., publish/update), immediately invalidate local overrides
+  // and reset in-memory state too (not only on first load).
+  useEffect(() => {
+    try {
+      const storedVersion = localStorage.getItem(VERSION_KEY);
+      if (storedVersion !== SOURCE_DATA_VERSION) {
+        localStorage.removeItem(LOCAL_DATA_KEY);
+        localStorage.setItem(VERSION_KEY, SOURCE_DATA_VERSION);
+        setData(fdaApprovals);
+      }
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Persist any updates coming from FDA validation / Excel upload so they don't "revert" on refresh.
   useEffect(() => {
