@@ -18,22 +18,20 @@ export function useAuth() {
     isAdmin: false,
   });
 
-  // Check if user is admin
+  // Check if user is admin using the database function (bypasses RLS)
   const checkAdminRole = useCallback(async (userId: string): Promise<boolean> => {
     try {
+      // Use the has_role database function which is SECURITY DEFINER
       const { data, error } = await supabase
-        .from("user_roles")
-        .select("id, role")
-        .eq("user_id", userId)
-        .eq("role", "admin")
-        .maybeSingle();
+        .rpc("has_role", { _user_id: userId, _role: "admin" });
 
       if (error) {
         console.error("Admin role check error:", error.message);
         return false;
       }
 
-      return data !== null;
+      console.log("Admin check result for", userId, ":", data);
+      return data === true;
     } catch (err) {
       console.error("Admin check exception:", err);
       return false;
