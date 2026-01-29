@@ -18,11 +18,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DrugApproval } from "@/data/fdaData";
-import { Eye, ExternalLink, Search, RotateCcw } from "lucide-react";
+import { Eye, ExternalLink, Search, RotateCcw, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 interface DrugTableProps {
   data: DrugApproval[];
 }
+
+type SortField = "approvalDate" | "brandName" | "activeIngredient" | "sponsor" | "therapeuticArea" | null;
+type SortDirection = "asc" | "desc";
 
 function getFdaProductUrl(drug: DrugApproval): string {
   // Rule:
@@ -56,6 +59,8 @@ function getFdaProductUrl(drug: DrugApproval): string {
 export function DrugTable({ data }: DrugTableProps) {
   const [selectedDrug, setSelectedDrug] = useState<DrugApproval | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortField, setSortField] = useState<SortField>("approvalDate");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
@@ -70,16 +75,51 @@ export function DrugTable({ data }: DrugTableProps) {
     );
   }, [data, searchTerm]);
 
-  // Ensure stable chronological rendering (and avoid React row re-use issues with duplicate applicationNo)
+  // Handle column header click for sorting
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      // New field, default to ascending
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Get sort icon for column header
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-3.5 w-3.5 ml-1 text-muted-foreground/50" />;
+    }
+    return sortDirection === "asc" 
+      ? <ArrowUp className="h-3.5 w-3.5 ml-1 text-primary" />
+      : <ArrowDown className="h-3.5 w-3.5 ml-1 text-primary" />;
+  };
+
+  // Sort data based on current sort field and direction
   const sorted = useMemo(() => {
     return [...filteredData].sort((a, b) => {
-      const byDate = a.approvalDate.localeCompare(b.approvalDate);
-      if (byDate !== 0) return byDate;
-      const byApp = a.applicationNo.localeCompare(b.applicationNo);
-      if (byApp !== 0) return byApp;
-      return (a.supplementCategory || "").localeCompare(b.supplementCategory || "");
+      let comparison = 0;
+      
+      if (sortField) {
+        const aVal = a[sortField]?.toString().toLowerCase() || "";
+        const bVal = b[sortField]?.toString().toLowerCase() || "";
+        comparison = aVal.localeCompare(bVal);
+      }
+      
+      // If primary sort is equal, use secondary sorts for stability
+      if (comparison === 0) {
+        const byDate = a.approvalDate.localeCompare(b.approvalDate);
+        if (byDate !== 0) return sortDirection === "asc" ? byDate : -byDate;
+        const byApp = a.applicationNo.localeCompare(b.applicationNo);
+        if (byApp !== 0) return byApp;
+        return (a.supplementCategory || "").localeCompare(b.supplementCategory || "");
+      }
+      
+      return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [filteredData]);
+  }, [filteredData, sortField, sortDirection]);
 
   if (data.length === 0) {
     return (
@@ -127,14 +167,75 @@ export function DrugTable({ data }: DrugTableProps) {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
+            {/* Sorting Info Bar */}
+            <div className="flex items-center gap-4 px-4 py-2 bg-muted/30 border-b text-sm text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <ArrowUpDown className="h-4 w-4" />
+                정렬 기준:
+              </span>
+              <span className="font-medium text-foreground">
+                {sortField === "approvalDate" && "승인일"}
+                {sortField === "brandName" && "제품명"}
+                {sortField === "activeIngredient" && "주성분"}
+                {sortField === "sponsor" && "제약사"}
+                {sortField === "therapeuticArea" && "치료영역"}
+                {!sortField && "없음"}
+              </span>
+              <Badge variant="outline" className="text-xs">
+                {sortDirection === "asc" ? "오름차순 ↑" : "내림차순 ↓"}
+              </Badge>
+              <span className="text-xs ml-auto">
+                * 컬럼 헤더를 클릭하여 정렬
+              </span>
+            </div>
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">승인일</TableHead>
-                  <TableHead className="w-[150px]">제품명</TableHead>
-                  <TableHead className="w-[150px]">주성분</TableHead>
-                  <TableHead className="w-[140px]">제약사</TableHead>
-                  <TableHead className="w-[130px]">치료영역</TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[100px]">
+                    <button 
+                      onClick={() => handleSort("approvalDate")}
+                      className="flex items-center font-medium hover:text-primary transition-colors"
+                    >
+                      승인일
+                      {getSortIcon("approvalDate")}
+                    </button>
+                  </TableHead>
+                  <TableHead className="w-[150px]">
+                    <button 
+                      onClick={() => handleSort("brandName")}
+                      className="flex items-center font-medium hover:text-primary transition-colors"
+                    >
+                      제품명
+                      {getSortIcon("brandName")}
+                    </button>
+                  </TableHead>
+                  <TableHead className="w-[150px]">
+                    <button 
+                      onClick={() => handleSort("activeIngredient")}
+                      className="flex items-center font-medium hover:text-primary transition-colors"
+                    >
+                      주성분
+                      {getSortIcon("activeIngredient")}
+                    </button>
+                  </TableHead>
+                  <TableHead className="w-[140px]">
+                    <button 
+                      onClick={() => handleSort("sponsor")}
+                      className="flex items-center font-medium hover:text-primary transition-colors"
+                    >
+                      제약사
+                      {getSortIcon("sponsor")}
+                    </button>
+                  </TableHead>
+                  <TableHead className="w-[130px]">
+                    <button 
+                      onClick={() => handleSort("therapeuticArea")}
+                      className="flex items-center font-medium hover:text-primary transition-colors"
+                    >
+                      치료영역
+                      {getSortIcon("therapeuticArea")}
+                    </button>
+                  </TableHead>
                   <TableHead className="w-[150px]">구분</TableHead>
                   <TableHead className="w-[80px]">상세</TableHead>
                 </TableRow>
