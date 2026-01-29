@@ -309,8 +309,21 @@ function parseLocalDate(dateStr: string): Date {
 }
 
 export function applyFilters(data: DrugApproval[], filters: FilterState): DrugApproval[] {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // Use the latest approval date in the dataset as the reference point.
+  // This keeps relative ranges (1m/3m/…) stable even when the dataset is historical
+  // and avoids requiring a hard refresh after source data changes.
+  const reference = (() => {
+    if (!data.length) {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+    let max = parseLocalDate(data[0].approvalDate);
+    for (let i = 1; i < data.length; i++) {
+      const d = parseLocalDate(data[i].approvalDate);
+      if (d > max) max = d;
+    }
+    return new Date(max.getFullYear(), max.getMonth(), max.getDate());
+  })();
 
   return data.filter((drug) => {
     // Parse approval date as local date to avoid timezone issues
@@ -327,8 +340,8 @@ export function applyFilters(data: DrugApproval[], filters: FilterState): DrugAp
         if (approvalDate > endDateOnly) return false;
       }
     } else if (filters.dateRange !== "all") {
-      // Preset date range filter - calculate cutoff date from today
-      const cutoffDate = new Date(today.getTime());
+      // Preset date range filter - calculate cutoff date from reference
+      const cutoffDate = new Date(reference.getTime());
       
       switch (filters.dateRange) {
         case "1m": cutoffDate.setMonth(cutoffDate.getMonth() - 1); break;
