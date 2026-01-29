@@ -33,9 +33,9 @@ function getFdaProductUrl(drug: DrugApproval): string {
   const cberByBrandName: Record<string, string> = {
     // AVANCE: Tissue product (CBER)
     "AVANCE": "https://www.fda.gov/vaccines-blood-biologics/avance",
-    // BREYANZI: Cellular/Gene Therapy (CBER)
+    // BREYANZI: CAR-T Cellular/Gene Therapy (CBER)
     "BREYANZI": "https://www.fda.gov/vaccines-blood-biologics/cellular-gene-therapy-products/breyanzi-lisocabtagene-maraleucel",
-    // WASKYRA: Cellular/Gene Therapy (CBER)
+    // WASKYRA: Gene Therapy (CBER)
     "WASKYRA": "https://www.fda.gov/vaccines-blood-biologics/waskyra",
   };
 
