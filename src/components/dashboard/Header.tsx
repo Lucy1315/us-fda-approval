@@ -62,7 +62,7 @@ export function Header({ onDataUpdate, data, filteredData }: HeaderProps) {
             <FdaValidation data={data} onDataUpdate={onDataUpdate} />
             <DataCommit data={data} />
             <FdaNovelDrugsExport data={data} filteredData={filteredData} />
-            <ExcelUpload onDataUpdate={onDataUpdate} />
+            <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} />
           </div>
         </div>
         
