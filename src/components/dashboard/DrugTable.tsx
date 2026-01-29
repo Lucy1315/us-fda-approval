@@ -54,6 +54,62 @@ function getFdaProductUrl(drug: DrugApproval): string {
   return `https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=${drug.applicationNo}`;
 }
 
+// 승인 유형 요약 생성
+function getApprovalTypeSummary(drug: DrugApproval): string {
+  const category = drug.supplementCategory || "";
+  const notes = drug.notes || "";
+  
+  // ORIG-1: 최초승인 (신약)
+  if (category.includes("ORIG-1") || category.includes("New Molecular Entity")) {
+    if (drug.isNovelDrug) {
+      return "🆕 최초승인 (신규 분자 실체, NME) - FDA 최초 승인 신약";
+    }
+    return "🆕 최초승인 (신규 분자 실체)";
+  }
+  
+  // Biosimilar
+  if (category.includes("Biosimilar") || drug.isBiosimilar) {
+    return "🧬 최초승인 (바이오시밀러) - 기존 생물의약품의 동등 생물의약품";
+  }
+  
+  // Type 3: New Dosage Form (최초승인이지만 새 제형)
+  if (category.includes("Type 3") || category.includes("New Dosage Form")) {
+    return "📦 최초승인 (신규 제형) - 기존 성분의 새로운 제형";
+  }
+  
+  // SUPPL - Efficacy (New Indication)
+  if (category.includes("SUPPL") && (category.includes("Efficacy") || category.includes("New Indication"))) {
+    return "📝 변경승인 (적응증 추가) - 기존 승인 의약품의 새로운 적응증";
+  }
+  
+  // SUPPL - New Dosage Form
+  if (category.includes("SUPPL") && category.includes("Dosage Form")) {
+    return "📝 변경승인 (제형 추가) - 기존 승인 의약품의 새로운 제형";
+  }
+  
+  // SUPPL - Labeling
+  if (category.includes("SUPPL") && category.includes("Labeling")) {
+    return "📝 변경승인 (라벨링) - 허가사항 변경";
+  }
+  
+  // Generic SUPPL
+  if (category.includes("SUPPL") || notes.includes("변경승인")) {
+    return "📝 변경승인 - 기존 승인 의약품의 허가사항 변경";
+  }
+  
+  // 비고에서 추정
+  if (notes.includes("적응증 추가") || notes.includes("적응증 확대")) {
+    return "📝 변경승인 (적응증 추가)";
+  }
+  
+  if (notes.includes("FDA 최초 승인")) {
+    return "🆕 최초승인 - FDA 최초 승인";
+  }
+  
+  // Default
+  return "🆕 최초승인";
+}
+
 export function DrugTable({ data }: DrugTableProps) {
   const [selectedDrug, setSelectedDrug] = useState<DrugApproval | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -281,12 +337,15 @@ export function DrugTable({ data }: DrugTableProps) {
                 </div>
               )}
               
-              {selectedDrug.notes && (
-                <div>
-                  <p className="text-sm text-muted-foreground">비고</p>
-                  <p className="text-sm">{selectedDrug.notes}</p>
-                </div>
-              )}
+              <div>
+                <p className="text-sm text-muted-foreground">비고</p>
+                <p className="text-sm font-medium text-primary mb-1">
+                  {getApprovalTypeSummary(selectedDrug)}
+                </p>
+                {selectedDrug.notes && (
+                  <p className="text-sm text-muted-foreground">{selectedDrug.notes}</p>
+                )}
+              </div>
               
               <Button 
                 className="w-full mt-4" 
