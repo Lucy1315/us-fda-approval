@@ -182,37 +182,6 @@ export function DrugTable({ data }: DrugTableProps) {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            {/* Sorting Info Bar */}
-            <div className="flex items-center gap-4 px-4 py-2 bg-muted/30 border-b text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <ArrowUpDown className="h-4 w-4" />
-                정렬 기준:
-              </span>
-              <span className="font-medium text-foreground">
-                {sortField === "approvalDate" && "승인일"}
-                {sortField === "brandName" && "제품명"}
-                {sortField === "activeIngredient" && "주성분"}
-                {sortField === "sponsor" && "제약사"}
-                {sortField === "therapeuticArea" && "치료영역"}
-                {!sortField && "없음"}
-              </span>
-              <Badge variant="outline" className="text-xs">
-                {sortDirection === "asc" ? "오름차순 ↑" : "내림차순 ↓"}
-              </Badge>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleResetSort}
-                disabled={sortField === "approvalDate" && sortDirection === "asc"}
-                className="h-7 px-2 text-xs"
-              >
-                <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                정렬 초기화
-              </Button>
-              <span className="text-xs ml-auto">
-                * 컬럼 헤더를 클릭하여 정렬
-              </span>
-            </div>
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
