@@ -158,14 +158,24 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Insert rows (batch)
+      // Insert rows in parallel chunks for better performance
+      const CHUNK_SIZE = 100;
       const rowsToInsert = drugsToSave.map((d) => ({
         version_id: versionData.id,
         payload: d,
       }));
 
-      const { error: rowsError } = await serviceClient.from("fda_data_rows").insert(rowsToInsert);
+      const chunks: typeof rowsToInsert[] = [];
+      for (let i = 0; i < rowsToInsert.length; i += CHUNK_SIZE) {
+        chunks.push(rowsToInsert.slice(i, i + CHUNK_SIZE));
+      }
 
+      // Insert all chunks in parallel
+      const insertResults = await Promise.all(
+        chunks.map((chunk) => serviceClient.from("fda_data_rows").insert(chunk))
+      );
+
+      const rowsError = insertResults.find((r) => r.error)?.error;
       if (rowsError) {
         console.error("Rows insert error:", rowsError);
         return new Response(
