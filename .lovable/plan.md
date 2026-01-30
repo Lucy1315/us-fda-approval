@@ -1,52 +1,70 @@
 
 
-# 허가번호 수정 및 FDA 링크 업데이트 계획
+# FDA 승인 데이터 대시보드 반영 계획
 
-## 개요
-첨부된 FDA 공식 CSV 데이터와 대시보드의 허가번호 불일치 문제를 수정합니다.
+## 현황 분석
 
-## 수정 대상 및 내용
+사용자가 제공한 2026년 1월 28일 FDA 승인 데이터 7건을 분석한 결과:
 
-| 제품명 | 현재 번호 | 올바른 번호 | 변경 필요 |
-|--------|-----------|-------------|-----------|
-| RYBREVANT FASPRO | BLA 761385 | BLA 761433 | ✅ |
-| NUFYMCO | BLA 761702 | BLA 761473 | ✅ |
-| BONCRESA | BLA 761688 | BLA 761456 | ✅ |
-| OZILTUS | BLA 761689 | BLA 761457 | ✅ |
+| 품목명 | 허가번호 | 유형 | 현재 상태 |
+|--------|----------|------|----------|
+| VFEND | NDA 021266 | SUPPL-59 | 이미 등록됨 |
+| VFEND | NDA 021267 | SUPPL-69 | 이미 등록됨 |
+| VFEND | NDA 021630 | SUPPL-49 | 이미 등록됨 |
+| DAYSEE | ANDA 091467 | SUPPL-16 | 추가 필요 |
+| ABILIFY MAINTENA KIT | NDA 202971 | SUPPL-20 | 이미 등록됨 |
+| SERTRALINE HYDROCHLORIDE | ANDA 219655 | ORIG-1 | 추가 필요 |
+| YUVEZZI | NDA 220142 | ORIG-1 | 이미 등록됨 |
+
+## 추가 대상 (2건)
+
+### 1. DAYSEE (ANDA 091467)
+- **성분**: Ethinyl Estradiol + Levonorgestrel
+- **제약사**: Lupin Ltd
+- **분류**: Manufacturing (CMC) 변경승인
+- **비고**: 제네릭 경구피임제
+
+### 2. SERTRALINE HYDROCHLORIDE (ANDA 219655)
+- **성분**: Sertraline Hydrochloride
+- **제약사**: SKG Pharma
+- **분류**: 최초승인 (ORIG-1)
+- **비고**: 제네릭 항우울제
+
+## 고려사항
+
+현재 대시보드는 **NDA/BLA** 위주로 관리되고 있으며, 위 2개 품목은 **ANDA**(제네릭 의약품)입니다.
+
+- ANDA 품목 포함 시 `applicationType` 필드에 "ANDA" 값 추가 필요
+- 필터 및 통계 로직에서 ANDA 처리 여부 검토 필요
 
 ## 작업 내용
 
-### 1. 데이터 파일 수정 (`src/data/fdaData.ts`)
-각 제품의 `ndaBlaNumber`와 `applicationNo` 필드를 올바른 값으로 수정:
+1. **`src/data/fdaData.ts` 수정**
+   - DAYSEE 항목 추가 (산부인과 - 경구피임제)
+   - SERTRALINE HYDROCHLORIDE 항목 추가 (정신건강의학과 - 항우울제)
+   - 2026-01-28 승인일로 기존 데이터 블록에 삽입
 
-- **RYBREVANT FASPRO**: 
-  - `ndaBlaNumber`: "BLA 761385" → "BLA 761433"
-  - `applicationNo`: "761385" → "761433"
-  - `fdaUrl`: 사용자가 제공한 링크로 변경
-  
-- **NUFYMCO**:
-  - `ndaBlaNumber`: "BLA 761702" → "BLA 761473"
-  - `applicationNo`: "761702" → "761473"
+2. **데이터 구조 예시**
+```text
+┌─────────────────────────────────────────────────┐
+│  DAYSEE (ANDA 091467)                           │
+├─────────────────────────────────────────────────┤
+│  approvalMonth: "2026-01"                       │
+│  approvalDate: "2026-01-28"                     │
+│  ndaBlaNumber: "ANDA 091467"                    │
+│  applicationNo: "091467"                        │
+│  applicationType: "ANDA"                        │
+│  brandName: "DAYSEE"                            │
+│  activeIngredient: "ethinyl estradiol;          │
+│                     levonorgestrel"             │
+│  sponsor: "Lupin Ltd"                           │
+│  therapeuticArea: "산부인과 - 경구피임제"         │
+│  supplementCategory: "SUPPL-16 - Manufacturing" │
+│  notes: "변경승인. 제조공정(CMC) 변경"            │
+└─────────────────────────────────────────────────┘
+```
 
-- **BONCRESA**:
-  - `ndaBlaNumber`: "BLA 761688" → "BLA 761456"
-  - `applicationNo`: "761688" → "761456"
+## 클라우드 동기화
 
-- **OZILTUS**:
-  - `ndaBlaNumber`: "BLA 761689" → "BLA 761457"
-  - `applicationNo`: "761689" → "761457"
-
-### 2. FDA 링크 설정
-- **RYBREVANT FASPRO**: `https://www.fda.gov/drugs/resources-information-approved-drugs/fda-approves-amivantamab-and-hyaluronidase-lpuj-subcutaneous-injection/`
-
-## 영향 범위
-- **대시보드 테이블**: 자동 반영 (데이터 소스 변경)
-- **상세 팝업**: 자동 반영
-- **엑셀 내보내기**: 자동 반영 (`DrugApproval` 인터페이스 사용)
-- **FDA 링크**: 제품명 클릭 시 올바른 페이지로 이동
-
-## 파일 변경 목록
-| 파일 | 변경 내용 |
-|------|----------|
-| `src/data/fdaData.ts` | 4개 제품의 허가번호 및 URL 수정 |
+소스 코드(`fdaData.ts`)를 수정한 후에는 관리자 로그인 상태에서 **클라우드 저장**을 수행해야 실제 대시보드에 반영됩니다 (Cloud-stored data takes precedence 정책).
 
