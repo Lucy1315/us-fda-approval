@@ -1,119 +1,139 @@
 
-# 대시보드 저장/로그아웃 문제 해결 계획
 
-## 문제 분석
+# 관리자 모드 제거 및 워크플로우 간소화 계획
 
-### 1. 저장 후 대시보드 미반영
-- **원인**: `saveToCloud()` 함수가 저장 후 로컬 상태만 업데이트하고, 클라우드에서 저장된 데이터를 다시 불러오지 않음
-- **현상**: 저장은 되지만 UI에 새 버전(v5→v6)이 즉시 반영되지 않음
+## 현재 문제점
 
-### 2. 저장 시간 과다
-- **현황**: Edge Function 실행시간 1.1~2.2초
-- **원인**: 96건 데이터를 매번 전체 삽입하는 방식
+1. **관리자 로그인 필요**: 데이터를 저장하려면 로그인/관리자 권한이 필요함
+2. **워크플로우 분리**: 엑셀 업로드 → 대시보드 적용 → FDA 검증 → 수정 → 클라우드 저장 등 단계가 많고 복잡함
+3. **저장 성능 이슈**: 클라우드 저장에 1~2초 소요
 
-### 3. 로그아웃 불가
-- **원인 추정**: `signOut()` 호출 후 `onAuthStateChange` 리스너가 상태를 제대로 리셋하지 못하거나, 버튼 클릭 이벤트 처리 문제
+## 새로운 워크플로우
 
-## 해결 방안
-
-### A. 저장 후 즉시 새로고침
 ```text
-┌────────────────────────────────────────────────┐
-│ saveToCloud() 개선                              │
-├────────────────────────────────────────────────┤
-│ 1. 데이터를 Edge Function으로 저장               │
-│ 2. 저장 성공 후 loadFromCloud() 호출             │
-│ 3. 최신 버전의 데이터로 UI 상태 갱신              │
-│ 4. 토스트 메시지로 완료 알림                     │
-└────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  간소화된 데이터 관리 흐름                                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. 엑셀 업로드  ──→  대시보드 즉시 반영 (세션 임시 저장)          │
+│         │                                                        │
+│         ▼                                                        │
+│  2. FDA 검증 실행  ──→  불일치 항목 수정                          │
+│         │                                                        │
+│         ▼                                                        │
+│  3. "확정" 버튼 클릭  ──→  클라우드 영구 저장                     │
+│         │                    + 대시보드 갱신                      │
+│         │                    + 엑셀 다운로드 반영                 │
+│         ▼                                                        │
+│  완료! (인증 불필요)                                              │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**`src/hooks/useCloudData.ts` 수정**
-- `saveToCloud` 함수에서 저장 성공 후 `loadFromCloud()`를 호출하여 최신 데이터로 상태 동기화
-- 이렇게 하면 저장 직후 UI가 새 버전을 정확히 반영함
+## 제거 대상
 
-### B. 로그아웃 로직 강화
-```text
-┌────────────────────────────────────────────────┐
-│ signOut() 개선                                  │
-├────────────────────────────────────────────────┤
-│ 1. 로그아웃 시작 즉시 로딩 상태 표시             │
-│ 2. supabase.auth.signOut() 호출                │
-│ 3. 수동으로 상태 즉시 리셋                       │
-│    (onAuthStateChange 대기하지 않음)            │
-│ 4. 토스트 메시지로 완료 알림                     │
-└────────────────────────────────────────────────┘
-```
+| 항목 | 설명 |
+|------|------|
+| AdminAuth 컴포넌트 | 로그인/회원가입/관리자 등록 UI 전체 제거 |
+| useAuth 훅 사용 | Index.tsx에서 isAdmin 의존성 제거 |
+| isAdmin prop | ExcelUpload, Header에서 제거 |
+| 관리자 로그인 버튼 | Header에서 AdminAuth 컴포넌트 삭제 |
 
-**`src/hooks/useAuth.ts` 수정**
-- `signOut` 함수에서 API 호출 후 즉시 상태를 `null`로 리셋
-- `onAuthStateChange` 이벤트 의존 제거로 즉각적인 UI 업데이트
+## 변경 사항
 
-### C. AdminAuth 버튼 개선
-**`src/components/dashboard/AdminAuth.tsx` 수정**
-- 로그아웃 버튼에 로딩 상태 추가
-- 클릭 후 즉각적인 피드백 제공
+### 1. Header 컴포넌트 수정
+- AdminAuth 제거
+- "확정" 버튼 추가 (클라우드 저장 + 새로고침)
+- isAdmin prop 제거
 
-## 수정 대상 파일
+### 2. ExcelUpload 컴포넌트 수정
+- isAdmin 조건 제거 (항상 세션에만 적용)
+- 버튼 텍스트: "적용" (클라우드 저장 없이 대시보드만 반영)
+- saveToCloud prop 제거
 
-| 파일 | 변경 내용 |
-|------|----------|
-| `src/hooks/useCloudData.ts` | saveToCloud 후 loadFromCloud 호출 추가 |
-| `src/hooks/useAuth.ts` | signOut 후 즉시 상태 리셋 |
-| `src/components/dashboard/AdminAuth.tsx` | 로그아웃 버튼 로딩 상태 추가 |
+### 3. FdaValidation 컴포넌트 수정
+- 수정 시 세션에만 반영 (기존 로직 유지)
+- "확정" 버튼과 연계하여 최종 저장
+
+### 4. Index.tsx 수정
+- useAuth 훅 제거
+- isAdmin 전달 제거
+
+### 5. ConfirmButton 신규 컴포넌트
+- "확정" 버튼: 현재 세션 데이터를 클라우드에 저장
+- 저장 완료 후 대시보드 자동 갱신
+
+### 6. UsageGuide 수정
+- 관리자 관련 안내 삭제
+- 새로운 워크플로우 안내 추가
+
+### 7. RLS 정책 수정
+- 클라우드 저장 시 인증 없이도 저장 가능하도록 Edge Function 수정
+- 또는 Service Role Key로 저장 (기존 구조 유지)
+
+## 수정 파일 목록
+
+| 파일 | 변경 |
+|------|------|
+| `src/components/dashboard/Header.tsx` | AdminAuth 제거, 확정 버튼 추가, isAdmin prop 제거 |
+| `src/components/dashboard/ExcelUpload.tsx` | isAdmin 로직 제거, saveToCloud prop 제거 |
+| `src/components/dashboard/UsageGuide.tsx` | 관리자 관련 내용 삭제, 새 워크플로우 안내 |
+| `src/pages/Index.tsx` | useAuth 제거, isAdmin 전달 제거 |
+| `src/components/dashboard/AdminAuth.tsx` | **삭제** |
+| `src/hooks/useAuth.ts` | **유지** (향후 필요 시 사용, 현재 미사용) |
 
 ## 기술적 상세
 
-### useCloudData.ts 변경
+### Header.tsx 변경
 ```typescript
-// 변경 전
-const saveToCloud = useCallback(async (data, notes) => {
-  // ... 저장 로직
-  setState((prev) => ({ ...prev, data, cloudVersion: response.version, ... }));
-  return true;
-}, []);
+// 제거: AdminAuth import 및 사용
+// 제거: isAdmin prop
 
-// 변경 후
-const saveToCloud = useCallback(async (data, notes) => {
-  // ... 저장 로직
-  // 저장 성공 후 클라우드에서 최신 데이터 다시 불러오기
-  const cloudResult = await loadFromCloud();
-  if (cloudResult) {
-    setState({
-      data: cloudResult.data,
-      isLoading: false,
-      cloudVersion: cloudResult.version,
-      cloudUpdatedAt: cloudResult.updatedAt,
-      isFromCloud: true,
-    });
-  }
-  return true;
-}, [loadFromCloud]);
+// 추가: 확정 버튼
+<Button onClick={handleConfirm} disabled={isSaving}>
+  {isSaving ? <Loader2 className="animate-spin" /> : <CloudUpload />}
+  확정
+</Button>
 ```
 
-### useAuth.ts 변경
+### ExcelUpload.tsx 변경
 ```typescript
 // 변경 전
-const signOut = useCallback(async () => {
-  const { error } = await supabase.auth.signOut();
-  // onAuthStateChange에 의존하여 상태 변경
-}, []);
+interface ExcelUploadProps {
+  onDataUpdate: (data: DrugApproval[]) => void;
+  currentData: DrugApproval[];
+  saveToCloud: (data: DrugApproval[], notes?: string) => Promise<boolean>;
+  isAdmin: boolean;
+}
 
 // 변경 후
-const signOut = useCallback(async () => {
-  // 즉시 상태 리셋 (UI 즉각 반영)
-  setState({ user: null, session: null, isLoading: false, isAdmin: false });
-  
-  const { error } = await supabase.auth.signOut();
-  if (error) {
-    toast.error(error.message);
-  } else {
-    toast.success("로그아웃되었습니다.");
-  }
-}, []);
+interface ExcelUploadProps {
+  onDataUpdate: (data: DrugApproval[]) => void;
+  currentData: DrugApproval[];
+}
+```
+
+### Index.tsx 변경
+```typescript
+// 제거
+import { useAuth } from "@/hooks/useAuth";
+const { isAdmin } = useAuth();
+
+// Header 호출 변경
+<Header
+  onDataUpdate={updateData}
+  data={data}
+  filteredData={filteredData}
+  saveToCloud={saveToCloud}
+  isFromCloud={isFromCloud}
+  cloudVersion={cloudVersion}
+  // isAdmin 제거
+/>
 ```
 
 ## 예상 결과
-- 저장 버튼 클릭 후 1~2초 내에 대시보드 버전이 업데이트됨
-- 로그아웃 버튼 클릭 시 즉시 로그인 화면으로 전환
-- 사용자 경험 개선: 명확한 로딩 상태와 완료 피드백
+
+- 로그인 없이 누구나 데이터 업로드/수정/저장 가능
+- 워크플로우 단순화: 업로드 → 검증/수정 → 확정
+- "확정" 버튼 하나로 클라우드 저장 + 대시보드 갱신 완료
+
