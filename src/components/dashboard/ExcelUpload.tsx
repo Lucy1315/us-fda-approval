@@ -18,6 +18,7 @@ interface ExcelUploadProps {
   onDataUpdate: (data: DrugApproval[]) => void;
   currentData: DrugApproval[];
   saveToCloud: (data: DrugApproval[], notes?: string) => Promise<boolean>;
+  isAdmin: boolean;
 }
 
 // Merge new data with existing data, deduplicating by applicationNo + approvalDate + supplementCategory
@@ -46,7 +47,7 @@ function mergeData(existing: DrugApproval[], incoming: DrugApproval[]): DrugAppr
   return result;
 }
 
-export function ExcelUpload({ onDataUpdate, currentData, saveToCloud }: ExcelUploadProps) {
+export function ExcelUpload({ onDataUpdate, currentData, saveToCloud, isAdmin }: ExcelUploadProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -193,31 +194,38 @@ export function ExcelUpload({ onDataUpdate, currentData, saveToCloud }: ExcelUpl
     // Update local state first
     onDataUpdate(merged);
     
-    // Auto-save to cloud
-    setIsSaving(true);
-    try {
-      const success = await saveToCloud(merged, `엑셀 업로드: ${fileName} (신규 ${addedCount}건 추가)`);
-      if (success) {
+    // Auto-save to cloud only if admin
+    if (isAdmin) {
+      setIsSaving(true);
+      try {
+        const success = await saveToCloud(merged, `엑셀 업로드: ${fileName} (신규 ${addedCount}건 추가)`);
+        if (success) {
+          toast({
+            title: "적용 및 저장 완료",
+            description: `신규 ${addedCount}건 추가, 총 ${merged.length}건이 클라우드에 저장되었습니다.`,
+          });
+        } else {
+          toast({
+            title: "적용 완료 (저장 실패)",
+            description: `대시보드에 반영되었지만 클라우드 저장에 실패했습니다.`,
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Cloud save error:", error);
         toast({
-          title: "적용 및 저장 완료",
-          description: `신규 ${addedCount}건 추가, 총 ${merged.length}건이 클라우드에 저장되었습니다.`,
-        });
-      } else {
-        toast({
-          title: "적용 완료 (저장 실패)",
-          description: `대시보드에 반영되었지만 클라우드 저장에 실패했습니다.`,
+          title: "적용 완료 (저장 오류)",
+          description: `대시보드에 반영되었지만 클라우드 저장 중 오류가 발생했습니다.`,
           variant: "destructive",
         });
+      } finally {
+        setIsSaving(false);
       }
-    } catch (error) {
-      console.error("Cloud save error:", error);
+    } else {
       toast({
-        title: "적용 완료 (저장 오류)",
-        description: `대시보드에 반영되었지만 클라우드 저장 중 오류가 발생했습니다.`,
-        variant: "destructive",
+        title: "적용 완료",
+        description: `신규 ${addedCount}건 추가, 총 ${merged.length}건이 대시보드에 반영되었습니다. (클라우드 저장은 관리자 로그인 필요)`,
       });
-    } finally {
-      setIsSaving(false);
     }
     
     setIsOpen(false);
@@ -337,7 +345,7 @@ export function ExcelUpload({ onDataUpdate, currentData, saveToCloud }: ExcelUpl
             ) : (
               <>
                 <Check className="h-4 w-4" />
-                적용 및 저장
+                {isAdmin ? "적용 및 저장" : "적용"}
               </>
             )}
           </Button>
