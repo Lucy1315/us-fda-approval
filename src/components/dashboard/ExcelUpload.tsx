@@ -17,8 +17,6 @@ import ExcelJS from "exceljs";
 interface ExcelUploadProps {
   onDataUpdate: (data: DrugApproval[]) => void;
   currentData: DrugApproval[];
-  saveToCloud: (data: DrugApproval[], notes?: string) => Promise<boolean>;
-  isAdmin: boolean;
 }
 
 // Merge new data with existing data, deduplicating by applicationNo + approvalDate + supplementCategory
@@ -47,11 +45,10 @@ function mergeData(existing: DrugApproval[], incoming: DrugApproval[]): DrugAppr
   return result;
 }
 
-export function ExcelUpload({ onDataUpdate, currentData, saveToCloud, isAdmin }: ExcelUploadProps) {
+export function ExcelUpload({ onDataUpdate, currentData }: ExcelUploadProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [parsedData, setParsedData] = useState<DrugApproval[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -185,48 +182,19 @@ export function ExcelUpload({ onDataUpdate, currentData, saveToCloud, isAdmin }:
     }
   };
 
-  const handleApply = async () => {
+  const handleApply = () => {
     if (!parsedData || parsedData.length === 0) return;
     
     const merged = mergeData(currentData, parsedData);
     const addedCount = merged.length - currentData.length;
     
-    // Update local state first
+    // Update local state only (no cloud save)
     onDataUpdate(merged);
     
-    // Auto-save to cloud only if admin
-    if (isAdmin) {
-      setIsSaving(true);
-      try {
-        const success = await saveToCloud(merged, `엑셀 업로드: ${fileName} (신규 ${addedCount}건 추가)`);
-        if (success) {
-          toast({
-            title: "적용 및 저장 완료",
-            description: `신규 ${addedCount}건 추가, 총 ${merged.length}건이 클라우드에 저장되었습니다.`,
-          });
-        } else {
-          toast({
-            title: "적용 완료 (저장 실패)",
-            description: `대시보드에 반영되었지만 클라우드 저장에 실패했습니다.`,
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Cloud save error:", error);
-        toast({
-          title: "적용 완료 (저장 오류)",
-          description: `대시보드에 반영되었지만 클라우드 저장 중 오류가 발생했습니다.`,
-          variant: "destructive",
-        });
-      } finally {
-        setIsSaving(false);
-      }
-    } else {
-      toast({
-        title: "적용 완료",
-        description: `신규 ${addedCount}건 추가, 총 ${merged.length}건이 대시보드에 반영되었습니다. (클라우드 저장은 관리자 로그인 필요)`,
-      });
-    }
+    toast({
+      title: "적용 완료",
+      description: `신규 ${addedCount}건 추가, 총 ${merged.length}건이 대시보드에 반영되었습니다. '확정' 버튼을 눌러 클라우드에 저장하세요.`,
+    });
     
     setIsOpen(false);
     setFileName(null);
@@ -329,25 +297,16 @@ export function ExcelUpload({ onDataUpdate, currentData, saveToCloud, isAdmin }:
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={isSaving}>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
             취소
           </Button>
           <Button 
             onClick={handleApply} 
-            disabled={!parsedData || parsedData.length === 0 || isSaving}
+            disabled={!parsedData || parsedData.length === 0}
             className="gap-2"
           >
-            {isSaving ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                저장 중...
-              </>
-            ) : (
-              <>
-                <Check className="h-4 w-4" />
-                {isAdmin ? "적용 및 저장" : "적용"}
-              </>
-            )}
+            <Check className="h-4 w-4" />
+            적용
           </Button>
         </DialogFooter>
       </DialogContent>

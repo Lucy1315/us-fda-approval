@@ -27,6 +27,25 @@ export function UsageGuide() {
         </DialogHeader>
         <ScrollArea className="h-[60vh] pr-4">
           <div className="space-y-6 text-sm">
+            {/* 워크플로우 요약 */}
+            <section>
+              <h3 className="font-semibold text-base mb-3 text-primary">🚀 데이터 관리 워크플로우</h3>
+              <div className="space-y-2 pl-2 text-muted-foreground">
+                <div className="flex items-start gap-2">
+                  <span className="font-bold text-foreground">1.</span>
+                  <span><strong className="text-foreground">엑셀 업로드</strong> → 대시보드에 즉시 반영 (세션 임시 저장)</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-bold text-foreground">2.</span>
+                  <span><strong className="text-foreground">FDA 검증</strong> → 불일치 항목 확인 및 수정</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-bold text-foreground">3.</span>
+                  <span><strong className="text-foreground">"확정" 버튼</strong> → 클라우드에 영구 저장 + 대시보드 갱신</span>
+                </div>
+              </div>
+            </section>
+
             {/* 필터 사용법 */}
             <section>
               <h3 className="font-semibold text-base mb-3 text-primary">📊 필터 사용법</h3>
@@ -80,6 +99,7 @@ export function UsageGuide() {
                   <li>엑셀 파일(.xlsx, .xls)을 선택하여 데이터를 업데이트할 수 있습니다</li>
                   <li>업로드된 데이터는 기존 데이터에 <strong className="text-foreground">병합(추가)</strong>됩니다 (기존 데이터를 대체하지 않음)</li>
                   <li>허가번호, 승인일, 승인유형이 동일한 항목은 중복으로 처리되어 추가되지 않습니다</li>
+                  <li>업로드 후 <strong className="text-foreground">"확정"</strong> 버튼을 눌러야 클라우드에 영구 저장됩니다</li>
                 </ul>
               </div>
             </section>
@@ -93,34 +113,20 @@ export function UsageGuide() {
                   <li>openFDA API를 통해 현재 데이터의 브랜드명, 스폰서 정보가 공식 데이터와 일치하는지 검증합니다</li>
                   <li>불일치 항목이 발견되면 목록으로 표시되며, 개별적으로 수정 여부를 선택할 수 있습니다</li>
                   <li>수정 후 <strong className="text-foreground">"적용"</strong> 버튼을 눌러야 대시보드에 반영됩니다</li>
-                  <li>검증창을 닫기 전까지는 임시 수정 상태로 유지됩니다</li>
+                  <li>검증 완료 후 <strong className="text-foreground">"확정"</strong> 버튼을 눌러 클라우드에 저장하세요</li>
                 </ul>
               </div>
             </section>
 
-            {/* 데이터 확정 (레거시) */}
+            {/* 데이터 확정 */}
             <section>
-              <h3 className="font-semibold text-base mb-3 text-primary">💾 데이터 확정 (레거시)</h3>
+              <h3 className="font-semibold text-base mb-3 text-primary">☁️ 데이터 확정 (클라우드 저장)</h3>
               <div className="space-y-3 pl-2">
                 <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                  <li>상단의 <strong className="text-foreground">"데이터 확정"</strong> 버튼을 클릭합니다</li>
-                  <li>현재 브라우저에서 수정한 데이터를 TypeScript 코드 형태로 추출할 수 있습니다</li>
-                  <li>추출된 코드를 소스 파일(fdaData.ts)에 직접 반영하면 모든 사용자에게 영구 적용됩니다</li>
-                  <li>개발자/관리자가 데이터 변경을 코드베이스에 커밋할 때 사용합니다</li>
-                </ul>
-              </div>
-            </section>
-
-            {/* 클라우드 저장 (권장) */}
-            <section>
-              <h3 className="font-semibold text-base mb-3 text-primary">☁️ 클라우드 저장 (권장)</h3>
-              <div className="space-y-3 pl-2">
-                <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                  <li><strong className="text-foreground">"관리자 로그인"</strong> 버튼을 클릭하여 로그인합니다</li>
-                  <li>첫 번째 로그인 사용자는 <strong className="text-foreground">"관리자 등록"</strong> 버튼으로 관리자 권한을 획득합니다</li>
-                  <li>관리자로 로그인된 상태에서 <strong className="text-foreground">"클라우드 저장"</strong> 버튼을 클릭합니다</li>
+                  <li>우측 상단의 <strong className="text-foreground">"확정"</strong> 버튼을 클릭합니다</li>
+                  <li>현재 세션의 데이터가 클라우드에 영구 저장됩니다</li>
                   <li>저장된 데이터는 <strong className="text-foreground">프리뷰/공개 사이트 모두에서 동일하게</strong> 표시됩니다</li>
-                  <li>더 이상 퍼블리시 후 데이터가 초기화되지 않습니다!</li>
+                  <li>엑셀 다운로드 시에도 확정된 최신 데이터가 반영됩니다</li>
                 </ul>
               </div>
             </section>
