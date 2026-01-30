@@ -1,10 +1,12 @@
-import { Calendar, Database, FileText, Cloud } from "lucide-react";
+import { useState } from "react";
+import { Calendar, Database, FileText, Cloud, CloudUpload, Loader2 } from "lucide-react";
 import { ExcelUpload } from "./ExcelUpload";
 import { FdaNovelDrugsExport } from "./FdaNovelDrugsExport";
 import { FdaValidation } from "./FdaValidation";
 import { UsageGuide } from "./UsageGuide";
-import { AdminAuth } from "./AdminAuth";
 import { DrugApproval } from "@/data/fdaData";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface HeaderProps {
   onDataUpdate: (data: DrugApproval[]) => void;
@@ -13,10 +15,33 @@ interface HeaderProps {
   saveToCloud: (data: DrugApproval[], notes?: string) => Promise<boolean>;
   isFromCloud: boolean;
   cloudVersion: number | null;
-  isAdmin: boolean;
 }
 
-export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCloud, cloudVersion, isAdmin }: HeaderProps) {
+export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCloud, cloudVersion }: HeaderProps) {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleConfirm = async () => {
+    if (data.length === 0) {
+      toast.error("저장할 데이터가 없습니다.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const success = await saveToCloud(data, "데이터 확정");
+      if (success) {
+        toast.success(`v${(cloudVersion || 0) + 1} 저장 완료! 대시보드가 갱신되었습니다.`);
+      } else {
+        toast.error("클라우드 저장에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("Confirm save error:", error);
+      toast.error("저장 중 오류가 발생했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <header className="mb-8">
       <div className="flex flex-col gap-3">
@@ -52,13 +77,26 @@ export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCl
             <UsageGuide />
             <FdaValidation data={data} onDataUpdate={onDataUpdate} />
             <FdaNovelDrugsExport data={data} filteredData={filteredData} />
-            <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} saveToCloud={saveToCloud} isAdmin={isAdmin} />
-            <AdminAuth
-              onSaveToCloud={saveToCloud}
-              data={data}
-              isFromCloud={isFromCloud}
-              cloudVersion={cloudVersion}
-            />
+            <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} />
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="gap-2"
+              onClick={handleConfirm}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  저장 중...
+                </>
+              ) : (
+                <>
+                  <CloudUpload className="h-4 w-4" />
+                  확정
+                </>
+              )}
+            </Button>
           </div>
         </div>
         
