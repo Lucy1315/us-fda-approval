@@ -107,41 +107,17 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "save") {
-      // Must be authenticated
-      const {
-        data: { user },
-      } = await userClient.auth.getUser();
-
-      if (!user) {
-        return new Response(
-          JSON.stringify({ success: false, error: "Not authenticated" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Check admin role (use service client to bypass RLS)
-      const { data: roleData } = await serviceClient
-        .from("user_roles")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      if (!roleData) {
-        return new Response(
-          JSON.stringify({ success: false, error: "Admin access required" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+      // No authentication required - anyone can save data
+      // Service client is used for all database operations
 
       const drugsToSave = body.data;
       const fingerprint = createDataFingerprint(drugsToSave);
 
-      // Create new version
+      // Create new version (no user association - anonymous save)
       const { data: versionData, error: versionError } = await serviceClient
         .from("fda_data_versions")
         .insert({
-          created_by: user.id,
+          created_by: null,
           is_verified: true,
           is_published: true,
           data_fingerprint: fingerprint,
