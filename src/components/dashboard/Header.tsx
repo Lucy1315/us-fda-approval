@@ -51,7 +51,7 @@ export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCl
             <UsageGuide />
             <FdaValidation data={data} onDataUpdate={onDataUpdate} />
             <FdaNovelDrugsExport data={data} filteredData={filteredData} />
-            <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} />
+            <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} saveToCloud={saveToCloud} />
             <AdminAuth
               onSaveToCloud={saveToCloud}
               data={data}
