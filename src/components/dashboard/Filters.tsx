@@ -208,6 +208,7 @@ export function Filters({ data, filters, onFilterChange }: FiltersProps) {
               <SelectItem value="all">전체</SelectItem>
               <SelectItem value="NDA">NDA</SelectItem>
               <SelectItem value="BLA">BLA</SelectItem>
+              <SelectItem value="ANDA">ANDA</SelectItem>
             </SelectContent>
           </Select>
         </div>
