@@ -73,11 +73,10 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as RequestBody;
 
     if (body.action === "load") {
-      // Anyone can load published data
+      // Anyone can load published data - use public view to hide sensitive fields
       const { data: versionData } = await serviceClient
-        .from("fda_data_versions")
+        .from("fda_data_versions_public")
         .select("id, version_number, updated_at")
-        .eq("is_published", true)
         .order("version_number", { ascending: false })
         .limit(1)
         .maybeSingle();

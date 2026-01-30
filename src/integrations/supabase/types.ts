@@ -38,6 +38,13 @@ export type Database = {
             referencedRelation: "fda_data_versions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fda_data_rows_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "fda_data_versions_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fda_data_versions: {
@@ -99,6 +106,36 @@ export type Database = {
       }
     }
     Views: {
+      fda_data_versions_public: {
+        Row: {
+          created_at: string | null
+          data_fingerprint: string | null
+          id: string | null
+          is_published: boolean | null
+          is_verified: boolean | null
+          updated_at: string | null
+          version_number: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_fingerprint?: string | null
+          id?: string | null
+          is_published?: boolean | null
+          is_verified?: boolean | null
+          updated_at?: string | null
+          version_number?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          data_fingerprint?: string | null
+          id?: string | null
+          is_published?: boolean | null
+          is_verified?: boolean | null
+          updated_at?: string | null
+          version_number?: number | null
+        }
+        Relationships: []
+      }
       public_fda_data_view: {
         Row: {
           payload: Json | null
