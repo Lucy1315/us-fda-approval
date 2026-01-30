@@ -112,7 +112,7 @@ export function useCloudData() {
     }));
   }, []);
 
-  // Initial load
+  // Initial load - merge source data with cloud data
   useEffect(() => {
     const init = async () => {
       setState((prev) => ({ ...prev, isLoading: true }));
@@ -120,8 +120,11 @@ export function useCloudData() {
       const cloudResult = await loadFromCloud();
 
       if (cloudResult) {
+        // Merge source data with cloud data (source data may have new entries)
+        const mergedData = mergeSourceWithCloud(fdaApprovals, cloudResult.data);
+        
         setState({
-          data: cloudResult.data,
+          data: mergedData,
           isLoading: false,
           cloudVersion: cloudResult.version,
           cloudUpdatedAt: cloudResult.updatedAt,
@@ -141,6 +144,32 @@ export function useCloudData() {
 
     init();
   }, [loadFromCloud]);
+
+// Merge source data (fdaData.ts) with cloud data, preferring cloud but adding missing source entries
+function mergeSourceWithCloud(source: DrugApproval[], cloud: DrugApproval[]): DrugApproval[] {
+  const seen = new Set<string>();
+  const result: DrugApproval[] = [];
+  
+  // Add cloud data first (takes priority)
+  for (const drug of cloud) {
+    const key = `${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(drug);
+    }
+  }
+  
+  // Add source data entries that are not in cloud
+  for (const drug of source) {
+    const key = `${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(drug);
+    }
+  }
+  
+  return result;
+}
 
   return {
     ...state,
