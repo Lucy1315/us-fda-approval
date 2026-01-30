@@ -17,6 +17,7 @@ import ExcelJS from "exceljs";
 interface ExcelUploadProps {
   onDataUpdate: (data: DrugApproval[]) => void;
   currentData: DrugApproval[];
+  saveToCloud: (data: DrugApproval[], notes?: string) => Promise<boolean>;
 }
 
 // Merge new data with existing data, deduplicating by applicationNo + approvalDate + supplementCategory
@@ -45,10 +46,11 @@ function mergeData(existing: DrugApproval[], incoming: DrugApproval[]): DrugAppr
   return result;
 }
 
-export function ExcelUpload({ onDataUpdate, currentData }: ExcelUploadProps) {
+export function ExcelUpload({ onDataUpdate, currentData, saveToCloud }: ExcelUploadProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [parsedData, setParsedData] = useState<DrugApproval[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -182,21 +184,47 @@ export function ExcelUpload({ onDataUpdate, currentData }: ExcelUploadProps) {
     }
   };
 
-  const handleApply = () => {
-    if (parsedData && parsedData.length > 0) {
-      const merged = mergeData(currentData, parsedData);
-      const addedCount = merged.length - currentData.length;
-      onDataUpdate(merged);
-      toast({
-        title: "적용 완료",
-        description: `신규 ${addedCount}건 추가, 총 ${merged.length}건 데이터가 대시보드에 반영되었습니다.`,
-      });
-      setIsOpen(false);
-      setFileName(null);
-      setParsedData(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+  const handleApply = async () => {
+    if (!parsedData || parsedData.length === 0) return;
+    
+    const merged = mergeData(currentData, parsedData);
+    const addedCount = merged.length - currentData.length;
+    
+    // Update local state first
+    onDataUpdate(merged);
+    
+    // Auto-save to cloud
+    setIsSaving(true);
+    try {
+      const success = await saveToCloud(merged, `엑셀 업로드: ${fileName} (신규 ${addedCount}건 추가)`);
+      if (success) {
+        toast({
+          title: "적용 및 저장 완료",
+          description: `신규 ${addedCount}건 추가, 총 ${merged.length}건이 클라우드에 저장되었습니다.`,
+        });
+      } else {
+        toast({
+          title: "적용 완료 (저장 실패)",
+          description: `대시보드에 반영되었지만 클라우드 저장에 실패했습니다.`,
+          variant: "destructive",
+        });
       }
+    } catch (error) {
+      console.error("Cloud save error:", error);
+      toast({
+        title: "적용 완료 (저장 오류)",
+        description: `대시보드에 반영되었지만 클라우드 저장 중 오류가 발생했습니다.`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+    
+    setIsOpen(false);
+    setFileName(null);
+    setParsedData(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -255,7 +283,7 @@ export function ExcelUpload({ onDataUpdate, currentData }: ExcelUploadProps) {
                 </>
               ) : parsedData ? (
                 <>
-                  <Check className="h-10 w-10 text-green-500" />
+                  <Check className="h-10 w-10 text-primary" />
                   <span className="text-sm font-medium">{fileName}</span>
                   <span className="text-xs text-primary font-medium">
                     {parsedData.length}건 데이터 준비됨
@@ -293,16 +321,25 @@ export function ExcelUpload({ onDataUpdate, currentData }: ExcelUploadProps) {
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+          <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={isSaving}>
             취소
           </Button>
           <Button 
             onClick={handleApply} 
-            disabled={!parsedData || parsedData.length === 0}
+            disabled={!parsedData || parsedData.length === 0 || isSaving}
             className="gap-2"
           >
-            <Check className="h-4 w-4" />
-            적용
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                저장 중...
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" />
+                적용 및 저장
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
