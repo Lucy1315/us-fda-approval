@@ -83,14 +83,17 @@ export function useCloudData() {
         return false;
       }
 
-      // Update local state
-      setState((prev) => ({
-        ...prev,
-        data,
-        cloudVersion: response.version,
-        cloudUpdatedAt: new Date().toISOString(),
-        isFromCloud: true,
-      }));
+      // 저장 성공 후 클라우드에서 최신 데이터 다시 불러오기
+      const cloudResult = await loadFromCloud();
+      if (cloudResult) {
+        setState({
+          data: cloudResult.data,
+          isLoading: false,
+          cloudVersion: cloudResult.version,
+          cloudUpdatedAt: cloudResult.updatedAt,
+          isFromCloud: true,
+        });
+      }
 
       toast.success(`✅ 데이터가 영구 저장되었습니다 (버전 ${response.version})`);
       return true;
@@ -99,7 +102,7 @@ export function useCloudData() {
       toast.error("저장 중 오류가 발생했습니다.");
       return false;
     }
-  }, []);
+  }, [loadFromCloud]);
 
   // Update local data (without cloud save)
   const updateData = useCallback((newData: DrugApproval[]) => {

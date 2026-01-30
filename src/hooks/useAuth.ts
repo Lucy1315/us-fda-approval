@@ -66,11 +66,15 @@ export function useAuth() {
 
   // Sign out
   const signOut = useCallback(async () => {
+    // 즉시 상태 리셋 (UI 즉각 반영)
+    setState({ user: null, session: null, isLoading: false, isAdmin: false });
+    
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast.error(error.message);
       return { success: false, error };
     }
+    toast.success("로그아웃되었습니다.");
     return { success: true };
   }, []);
 

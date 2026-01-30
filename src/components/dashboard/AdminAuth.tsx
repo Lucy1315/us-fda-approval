@@ -29,6 +29,7 @@ export function AdminAuth({ onSaveToCloud, data, isFromCloud, cloudVersion }: Ad
   const [password, setPassword] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,8 +168,17 @@ export function AdminAuth({ onSaveToCloud, data, isFromCloud, cloudVersion }: Ad
           <Shield className="h-4 w-4" />
           <span className="hidden sm:inline">관리자 등록</span>
         </Button>
-        <Button variant="ghost" size="sm" onClick={signOut}>
-          <LogOut className="h-4 w-4" />
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={async () => {
+            setIsLoggingOut(true);
+            await signOut();
+            setIsLoggingOut(false);
+          }}
+          disabled={isLoggingOut}
+        >
+          {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
         </Button>
       </div>
     );
@@ -196,8 +206,17 @@ export function AdminAuth({ onSaveToCloud, data, isFromCloud, cloudVersion }: Ad
           {isFromCloud ? `저장 (v${cloudVersion})` : "클라우드 저장"}
         </span>
       </Button>
-      <Button variant="ghost" size="sm" onClick={signOut}>
-        <LogOut className="h-4 w-4" />
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        onClick={async () => {
+          setIsLoggingOut(true);
+          await signOut();
+          setIsLoggingOut(false);
+        }}
+        disabled={isLoggingOut}
+      >
+        {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
       </Button>
     </div>
   );
