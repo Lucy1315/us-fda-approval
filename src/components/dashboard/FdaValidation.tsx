@@ -44,23 +44,15 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [activeTab, setActiveTab] = useState("validate");
   const [editingItem, setEditingItem] = useState<EditState | null>(null);
-  const [hasChanges, setHasChanges] = useState(false);
-  // Local draft so that user edits only commit to dashboard when they click the final "적용" button.
-  const [draftData, setDraftData] = useState<DrugApproval[] | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
-    // Start a fresh draft whenever the dialog opens.
-    setDraftData(data);
-    setHasChanges(false);
     setEditingItem(null);
-    // Keep current tab; user may reopen to continue fixing.
-  }, [isOpen, data]);
+  }, [isOpen]);
 
   const handleValidate = async () => {
     setIsValidating(true);
     setResults([]);
-    setHasChanges(false);
     
     const uniqueApps = new Map<string, { applicationNo: string; brandName: string; applicationType: string }>();
     
@@ -159,18 +151,14 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
   };
 
   const handleApplyFix = (result: ValidationResult) => {
-    if (!editingItem) return;
+    if (!editingItem || !onDataUpdate) return;
 
-    const base = draftData ?? data;
     // Strip duplicate prefix from user input
     const cleanedAppNo = stripApplicationPrefix(editingItem.newApplicationNo);
 
-    const updatedData = base.map((drug) => {
+    const updatedData = data.map((drug) => {
       if (drug.applicationNo === result.applicationNo) {
         const applicationType = drug.applicationType;
-        // Update fdaUrl cautiously:
-        // - CBER products: keep their manual URL
-        // - Non-CBER: only rewrite if it was already a Drugs@FDA URL (or missing)
         const newFdaUrl = drug.isCberProduct
           ? drug.fdaUrl
           : (drug.fdaUrl && !isDrugsAtFdaUrl(drug.fdaUrl))
@@ -187,7 +175,9 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       return drug;
     });
 
-    setDraftData(updatedData);
+    // 즉시 대시보드에 반영
+    const committed = deduplicate(updatedData);
+    onDataUpdate(committed);
 
     // Update the result in local state
     setResults((prev) =>
@@ -198,15 +188,14 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       )
     );
 
-    setHasChanges(true);
-    toast.success(`${result.brandName} → ${editingItem.newBrandName} 수정 완료`);
+    toast.success(`✅ ${result.brandName} → ${editingItem.newBrandName} 즉시 반영 완료`);
     setEditingItem(null);
   };
 
   const handleApplyFdaBrandName = (result: ValidationResult, fdaBrandName: string) => {
-    const base = draftData ?? data;
+    if (!onDataUpdate) return;
 
-    const updatedData = base.map((drug) => {
+    const updatedData = data.map((drug) => {
       if (drug.applicationNo === result.applicationNo) {
         return {
           ...drug,
@@ -216,7 +205,9 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       return drug;
     });
 
-    setDraftData(updatedData);
+    // 즉시 대시보드에 반영
+    const committed = deduplicate(updatedData);
+    onDataUpdate(committed);
 
     setResults((prev) =>
       prev.map((r) =>
@@ -226,12 +217,11 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       )
     );
 
-    setHasChanges(true);
-    toast.success(`${result.brandName} → ${fdaBrandName} 수정 완료 (적용하기 버튼을 눌러 최종 반영)`);
+    toast.success(`✅ ${result.brandName} → ${fdaBrandName} 즉시 반영 완료`);
   };
 
   const handleApplyAllFixes = () => {
-    const base = draftData ?? data;
+    if (!onDataUpdate) return;
 
     const fixableResults = invalidResults.filter(
       (r) => r.fdaBrandNames.length > 0 && !r.error?.includes("not found")
@@ -242,7 +232,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       return;
     }
 
-    let updatedData = [...base];
+    let updatedData = [...data];
     const appliedFixes: string[] = [];
 
     fixableResults.forEach((result) => {
@@ -259,7 +249,9 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       });
     });
 
-    setDraftData(updatedData);
+    // 즉시 대시보드에 반영
+    const committed = deduplicate(updatedData);
+    onDataUpdate(committed);
 
     setResults((prev) =>
       prev.map((r) => {
@@ -271,27 +263,7 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
       })
     );
 
-    setHasChanges(true);
-    toast.success(`${appliedFixes.length}건의 수정이 완료되었습니다. 적용하기 버튼을 눌러 최종 반영하세요.`);
-  };
-
-  const handleFinalApply = () => {
-    if (!onDataUpdate) {
-      toast.error("❌ 적용할 수 없습니다. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-    if (!draftData || !hasChanges) {
-      toast.info("ℹ️ 수정 사항이 없어 반영할 내용이 없습니다.");
-      setIsOpen(false);
-      return;
-    }
-
-    // Ensure a new reference, deduplicate, and avoid any accidental mutation issues.
-    const committed = deduplicate(draftData).map((d) => ({ ...d }));
-    onDataUpdate(committed);
-    setIsOpen(false);
-    setHasChanges(false);
-    toast.success("✅ 수정 사항이 대시보드에 반영되었습니다. 엑셀 내보내기 시에도 적용됩니다.");
+    toast.success(`✅ ${appliedFixes.length}건의 수정이 즉시 반영되었습니다.`);
   };
 
   const invalidResults = results.filter((r) => !r.isValid);
@@ -417,18 +389,6 @@ export function FdaValidation({ data, onDataUpdate }: FdaValidationProps) {
               )}
             </div>
 
-            {/* Final commit button: always visible when there are pending changes */}
-            {hasChanges && (
-              <div className="flex items-center justify-between rounded-md border-2 border-primary/40 bg-primary/5 px-3 py-2">
-                <div className="text-sm text-muted-foreground">
-                  ⚠️ 수정 사항이 임시 저장되었습니다. 아래 <span className="font-bold text-foreground">적용</span> 버튼을 눌러야 대시보드와 엑셀에 최종 반영됩니다.
-                </div>
-                <Button onClick={handleFinalApply} variant="default" size="lg" className="gap-2" disabled={!onDataUpdate}>
-                  <Check className="h-4 w-4" />
-                  적용하기
-                </Button>
-              </div>
-            )}
 
             {invalidResults.length === 0 ? (
               <div className="p-4 bg-primary/10 rounded-md border border-primary/20 text-center">
