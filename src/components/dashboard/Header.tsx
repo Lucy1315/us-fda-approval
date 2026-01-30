@@ -13,9 +13,10 @@ interface HeaderProps {
   saveToCloud: (data: DrugApproval[], notes?: string) => Promise<boolean>;
   isFromCloud: boolean;
   cloudVersion: number | null;
+  isAdmin: boolean;
 }
 
-export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCloud, cloudVersion }: HeaderProps) {
+export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCloud, cloudVersion, isAdmin }: HeaderProps) {
   return (
     <header className="mb-8">
       <div className="flex flex-col gap-3">
@@ -51,7 +52,7 @@ export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCl
             <UsageGuide />
             <FdaValidation data={data} onDataUpdate={onDataUpdate} />
             <FdaNovelDrugsExport data={data} filteredData={filteredData} />
-            <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} saveToCloud={saveToCloud} />
+            <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} saveToCloud={saveToCloud} isAdmin={isAdmin} />
             <AdminAuth
               onSaveToCloud={saveToCloud}
               data={data}
