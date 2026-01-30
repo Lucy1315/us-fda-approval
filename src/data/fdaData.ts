@@ -1314,7 +1314,7 @@ export const fdaApprovals: DrugApproval[] = [
     ndaBlaNumber: "NDA 211241",
     applicationNo: "211241",
     applicationType: "NDA",
-    brandName: "ZYCUBON",
+    brandName: "ZYCUBO",
     activeIngredient: "copper histidinate",
     sponsor: "Sentynl Therapeutics",
     indicationFull: "Menkes disease 소아 환자의 구리 보충 치료",
