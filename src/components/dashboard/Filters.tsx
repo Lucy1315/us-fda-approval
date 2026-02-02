@@ -309,20 +309,11 @@ function parseLocalDate(dateStr: string): Date {
 }
 
 export function applyFilters(data: DrugApproval[], filters: FilterState): DrugApproval[] {
-  // Use the latest approval date in the dataset as the reference point.
-  // This keeps relative ranges (1m/3m/…) stable even when the dataset is historical
-  // and avoids requiring a hard refresh after source data changes.
+  // Use today's date as the reference point for relative date filters.
+  // This ensures "1 month" filter means "from 1 month ago until today".
   const reference = (() => {
-    if (!data.length) {
-      const now = new Date();
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    }
-    let max = parseLocalDate(data[0].approvalDate);
-    for (let i = 1; i < data.length; i++) {
-      const d = parseLocalDate(data[i].approvalDate);
-      if (d > max) max = d;
-    }
-    return new Date(max.getFullYear(), max.getMonth(), max.getDate());
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   })();
 
   return data.filter((drug) => {
