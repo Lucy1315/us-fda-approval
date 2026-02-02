@@ -1,39 +1,86 @@
-# 관리자 모드 제거 및 워크플로우 간소화 - 완료
 
-## 변경 완료된 워크플로우
+# 승인일 필터 로직 수정 및 헤더에 오늘 날짜 표시
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  간소화된 데이터 관리 흐름                                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  1. 엑셀 업로드  ──→  대시보드 즉시 반영 (세션 임시 저장)          │
-│         │                                                        │
-│         ▼                                                        │
-│  2. FDA 검증 실행  ──→  불일치 항목 수정                          │
-│         │                                                        │
-│         ▼                                                        │
-│  3. "확정" 버튼 클릭  ──→  클라우드 영구 저장                     │
-│         │                    + 대시보드 갱신                      │
-│         │                    + 엑셀 다운로드 반영                 │
-│         ▼                                                        │
-│  완료! (인증 불필요)                                              │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+## 요약
+현재 승인일 필터가 "데이터 수집일(최신 승인일)"을 기준으로 작동하고 있어 실제 오늘 날짜와 맞지 않습니다. 이를 **오늘 날짜 기준**으로 변경하고, 헤더에 오늘 날짜를 명시합니다.
+
+---
+
+## 변경 내용
+
+### 1. 필터 로직 수정 (`Filters.tsx`)
+- **기존**: 데이터셋 내 최신 승인일을 `reference`로 사용
+- **변경**: 시스템의 오늘 날짜(`new Date()`)를 기준으로 사용
+
+**수정 전:**
+```
+reference = 데이터셋의 최신 승인일 (예: 2025-12-30)
+1개월 필터 = 2025-11-30 ~ 2025-12-30
 ```
 
-## 완료된 변경 사항
+**수정 후:**
+```
+reference = 오늘 날짜 (예: 2026-02-02)
+1개월 필터 = 2026-01-02 ~ 2026-02-02
+```
 
-| 파일 | 변경 내용 |
-|------|----------|
-| `AdminAuth.tsx` | ✅ 삭제됨 |
-| `Header.tsx` | ✅ AdminAuth 제거, "확정" 버튼 추가, isAdmin prop 제거 |
-| `ExcelUpload.tsx` | ✅ isAdmin/saveToCloud prop 제거, 세션 전용 적용 |
-| `Index.tsx` | ✅ useAuth 제거, isAdmin 전달 제거 |
-| `UsageGuide.tsx` | ✅ 새 워크플로우 안내로 업데이트 |
+### 2. 헤더에 오늘 날짜 추가 (`Header.tsx`)
+- 기존 "수집일" 옆에 "기준일: 오늘 날짜" 표시
+- 형식: `기준일: 2026-02-02 (일)`
 
-## 결과
+---
 
-- ✅ 로그인 없이 누구나 데이터 업로드/수정/저장 가능
-- ✅ 워크플로우 단순화: 업로드 → 검증/수정 → 확정
-- ✅ "확정" 버튼 하나로 클라우드 저장 + 대시보드 갱신 완료
+## 기술적 세부사항
+
+### Filters.tsx 수정
+`applyFilters` 함수에서 reference 계산 로직 변경:
+
+```typescript
+// 기존: 데이터셋 최신 승인일 사용
+const reference = (() => {
+  if (!data.length) { return today; }
+  let max = parseLocalDate(data[0].approvalDate);
+  for (let i = 1; i < data.length; i++) { ... }
+  return max;
+})();
+
+// 변경: 항상 오늘 날짜 사용
+const reference = (() => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+})();
+```
+
+### Header.tsx 수정
+오늘 날짜를 동적으로 표시:
+
+```typescript
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
+
+// 컴포넌트 내부
+const today = new Date();
+const todayFormatted = format(today, "yyyy-MM-dd (EEE)", { locale: ko });
+
+// JSX
+<div className="flex items-center gap-1.5 text-muted-foreground">
+  <CalendarCheck className="h-4 w-4" />
+  <span>기준일: <strong className="text-foreground">{todayFormatted}</strong></span>
+</div>
+```
+
+---
+
+## 예상 결과
+
+| 구분 | 기존 | 변경 후 |
+|------|------|---------|
+| 기준일 | 2025-12-30 (데이터 최신일) | 2026-02-02 (오늘) |
+| 1개월 필터 범위 | 2025-11-30 ~ 2025-12-30 | 2026-01-02 ~ 2026-02-02 |
+| 헤더 표시 | 수집일: 2026-01-29 | 수집일: 2026-01-29 / 기준일: 2026-02-02 |
+
+---
+
+## 수정 파일
+1. `src/components/dashboard/Filters.tsx` - applyFilters 함수 수정
+2. `src/components/dashboard/Header.tsx` - 오늘 날짜 표시 추가
