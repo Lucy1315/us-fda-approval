@@ -1145,7 +1145,7 @@ export const fdaApprovals: DrugApproval[] = [
     approvalType: "정규승인",
     supplementCategory: "ORIG-1 (New Molecular Entity)",
     notes: "FDA 최초 승인 NK-1 수용체 길항제 (멀미 적응증)",
-    fdaUrl: "https://www.fda.gov/drugs/news-events-human-drugs/fda-approves-tradipitant-prevention-motion-sickness-adults",
+    fdaUrl: "https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo=220152",
   },
   // ===== 2026년 1월 승인 (오름차순) =====
   {
