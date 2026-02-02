@@ -145,29 +145,48 @@ export function useCloudData() {
     init();
   }, [loadFromCloud]);
 
-// Merge source data (fdaData.ts) with cloud data, preferring cloud but adding missing source entries
+// Merge source data (fdaData.ts) with cloud data.
+// Default: prefer cloud, but allow source to override clearly broken FDA links.
 function mergeSourceWithCloud(source: DrugApproval[], cloud: DrugApproval[]): DrugApproval[] {
+  const keyOf = (drug: DrugApproval) => `${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`;
+
+  const sourceByKey = new Map<string, DrugApproval>();
+  for (const s of source) sourceByKey.set(keyOf(s), s);
+
   const seen = new Set<string>();
   const result: DrugApproval[] = [];
-  
+
+  const shouldOverrideFdaUrl = (cloudUrl?: string, sourceUrl?: string) => {
+    if (!sourceUrl || !/^https?:\/\//i.test(sourceUrl)) return false;
+    if (!cloudUrl || !/^https?:\/\//i.test(cloudUrl)) return true;
+    if (cloudUrl === sourceUrl) return false;
+    // Known-to-break patterns: FDA press-release paths often get moved/404.
+    if (/^https?:\/\/www\.fda\.gov\/drugs\/news-events-human-drugs\//i.test(cloudUrl)) return true;
+    return false;
+  };
+
   // Add cloud data first (takes priority)
-  for (const drug of cloud) {
-    const key = `${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      result.push(drug);
+  for (const c of cloud) {
+    const key = keyOf(c);
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const s = sourceByKey.get(key);
+    if (s && shouldOverrideFdaUrl(c.fdaUrl, s.fdaUrl)) {
+      result.push({ ...c, fdaUrl: s.fdaUrl });
+    } else {
+      result.push(c);
     }
   }
-  
+
   // Add source data entries that are not in cloud
-  for (const drug of source) {
-    const key = `${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      result.push(drug);
-    }
+  for (const s of source) {
+    const key = keyOf(s);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(s);
   }
-  
+
   return result;
 }
 
