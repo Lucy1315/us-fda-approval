@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Calendar, Database, FileText, Cloud, CloudUpload, Loader2 } from "lucide-react";
+import { Calendar, CalendarCheck, Database, FileText, Cloud, CloudUpload, Loader2 } from "lucide-react";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 import { ExcelUpload } from "./ExcelUpload";
 import { FdaNovelDrugsExport } from "./FdaNovelDrugsExport";
 import { FdaValidation } from "./FdaValidation";
@@ -42,6 +44,8 @@ export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCl
     }
   };
 
+  const todayFormatted = format(new Date(), "yyyy-MM-dd (EEE)", { locale: ko });
+
   return (
     <header className="mb-8">
       <div className="flex flex-col gap-3">
@@ -71,6 +75,11 @@ export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCl
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Calendar className="h-4 w-4" />
             <span>수집일: <strong className="text-foreground">2026-01-29</strong></span>
+          </div>
+          
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <CalendarCheck className="h-4 w-4" />
+            <span>기준일: <strong className="text-foreground">{todayFormatted}</strong></span>
           </div>
           
           <div className="flex items-center gap-2">
