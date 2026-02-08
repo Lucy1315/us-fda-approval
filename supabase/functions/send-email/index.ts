@@ -142,7 +142,7 @@ const handler = async (req: Request): Promise<Response> => {
     const html = generateEmailHtml(data);
 
     const emailResponse = await resend.emails.send({
-      from: "FDA Dashboard <jisoo.kim@samyang.com>",
+      from: "FDA Dashboard <onboarding@resend.dev>",
       to: [data.to],
       subject: data.subject,
       html,
