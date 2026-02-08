@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Calendar, CalendarCheck, Database, FileText, Cloud, CloudUpload, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { EmailSend } from "./EmailSend";
 import { ExcelUpload } from "./ExcelUpload";
 import { FdaNovelDrugsExport } from "./FdaNovelDrugsExport";
 import { FdaValidation } from "./FdaValidation";
@@ -86,6 +87,7 @@ export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCl
             <UsageGuide />
             <FdaValidation data={data} onDataUpdate={onDataUpdate} />
             <FdaNovelDrugsExport data={data} filteredData={filteredData} />
+            <EmailSend filteredData={filteredData} />
             <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} />
             <Button 
               variant="default" 
