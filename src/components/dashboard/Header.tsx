@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, CalendarCheck, Database, FileText, Cloud, CloudUpload, Loader2, Settings2, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, CalendarCheck, Database, FileText, Cloud, CloudUpload, Loader2, Settings2, ChevronDown, ChevronUp, Lock, LogOut } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -8,6 +8,7 @@ import { ExcelUpload } from "./ExcelUpload";
 import { FdaNovelDrugsExport } from "./FdaNovelDrugsExport";
 import { FdaValidation } from "./FdaValidation";
 import { UsageGuide } from "./UsageGuide";
+import { AdminPasswordDialog } from "./AdminPasswordDialog";
 import { DrugApproval } from "@/data/fdaData";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -24,6 +25,8 @@ interface HeaderProps {
 export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCloud, cloudVersion }: HeaderProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 
   const handleConfirm = async () => {
     if (data.length === 0) {
@@ -49,93 +52,138 @@ export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCl
 
   const todayFormatted = format(new Date(), "yyyy-MM-dd (EEE)", { locale: ko });
 
+  const handleAdminClick = () => {
+    if (!isAdminAuthenticated) {
+      setShowPasswordDialog(true);
+    } else {
+      setIsAdminOpen(!isAdminOpen);
+    }
+  };
+
+  const handleAdminSuccess = () => {
+    setIsAdminAuthenticated(true);
+    setIsAdminOpen(true);
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdminAuthenticated(false);
+    setIsAdminOpen(false);
+    toast.info("관리자 모드가 해제되었습니다.");
+  };
+
   return (
-    <header className="mb-8">
-      <div className="flex flex-col gap-3">
-        {/* 타이틀 */}
-        <div className="flex items-center gap-3">
-          <FileText className="h-6 w-6 text-muted-foreground" />
-          <h1 className="text-2xl font-bold text-foreground">
-            US FDA 승인 전문의약품
-          </h1>
-          {isFromCloud && (
-            <span className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded">
-              <Cloud className="h-3 w-3" />
-              v{cloudVersion}
-            </span>
-          )}
-        </div>
-        
-        {/* 서브타이틀 + 데이터 정보 + 액션 버튼 */}
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm relative">
-          <span className="text-muted-foreground">미국 FDA 전문의약품 승인 데이터 대시보드</span>
-          
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Database className="h-4 w-4" />
-            <span>데이터: <strong className="text-foreground">{data.length}건</strong></span>
+    <>
+      <AdminPasswordDialog 
+        open={showPasswordDialog} 
+        onOpenChange={setShowPasswordDialog} 
+        onSuccess={handleAdminSuccess} 
+      />
+      
+      <header className="mb-8">
+        <div className="flex flex-col gap-3">
+          {/* 타이틀 */}
+          <div className="flex items-center gap-3">
+            <FileText className="h-6 w-6 text-muted-foreground" />
+            <h1 className="text-2xl font-bold text-foreground">
+              US FDA 승인 전문의약품
+            </h1>
+            {isFromCloud && (
+              <span className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded">
+                <Cloud className="h-3 w-3" />
+                v{cloudVersion}
+              </span>
+            )}
           </div>
           
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>수집일: <strong className="text-foreground">2026-01-29</strong></span>
-          </div>
-          
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <CalendarCheck className="h-4 w-4" />
-            <span>기준일: <strong className="text-foreground">{todayFormatted}</strong></span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <UsageGuide />
-            <FdaNovelDrugsExport data={data} filteredData={filteredData} />
+          {/* 서브타이틀 + 데이터 정보 + 액션 버튼 */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm relative">
+            <span className="text-muted-foreground">미국 FDA 전문의약품 승인 데이터 대시보드</span>
             
-            <Collapsible open={isAdminOpen} onOpenChange={setIsAdminOpen}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Settings2 className="h-4 w-4" />
-                  관리자
-                  {isAdminOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                </Button>
-              </CollapsibleTrigger>
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Database className="h-4 w-4" />
+              <span>데이터: <strong className="text-foreground">{data.length}건</strong></span>
+            </div>
+            
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span>수집일: <strong className="text-foreground">2026-01-29</strong></span>
+            </div>
+            
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <CalendarCheck className="h-4 w-4" />
+              <span>기준일: <strong className="text-foreground">{todayFormatted}</strong></span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <UsageGuide />
+              <FdaNovelDrugsExport data={data} filteredData={filteredData} />
               
-              <CollapsibleContent className="absolute right-0 mt-2 z-10">
-                <div className="flex items-center gap-2 p-2 bg-background border rounded-md shadow-md">
-                  <FdaValidation data={data} onDataUpdate={onDataUpdate} />
-                  <EmailSend filteredData={filteredData} />
-                  <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} />
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    className="gap-2"
-                    onClick={handleConfirm}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        저장 중...
-                      </>
-                    ) : (
-                      <>
-                        <CloudUpload className="h-4 w-4" />
-                        확정
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+              {isAdminAuthenticated ? (
+                <Collapsible open={isAdminOpen} onOpenChange={setIsAdminOpen}>
+                  <div className="flex items-center gap-1">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Settings2 className="h-4 w-4" />
+                        관리자
+                        {isAdminOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-9 w-9 p-0"
+                      onClick={handleAdminLogout}
+                      title="관리자 모드 해제"
+                    >
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  <CollapsibleContent className="absolute right-0 mt-2 z-10">
+                    <div className="flex items-center gap-2 p-2 bg-background border rounded-md shadow-md">
+                      <FdaValidation data={data} onDataUpdate={onDataUpdate} />
+                      <EmailSend filteredData={filteredData} />
+                      <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} />
+                      <Button 
+                        variant="default" 
+                        size="sm" 
+                        className="gap-2"
+                        onClick={handleConfirm}
+                        disabled={isSaving}
+                      >
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            저장 중...
+                          </>
+                        ) : (
+                          <>
+                            <CloudUpload className="h-4 w-4" />
+                            확정
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              ) : (
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleAdminClick}>
+                  <Lock className="h-4 w-4" />
+                  관리자
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {/* 데이터 소스 태그 */}
+          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span className="px-2 py-1 rounded bg-muted">FDA Official</span>
+            <span className="px-2 py-1 rounded bg-muted">Drugs.com</span>
+            <span className="px-2 py-1 rounded bg-muted">ASCO Post</span>
+            <span className="px-2 py-1 rounded bg-muted">NeurologyLive</span>
           </div>
         </div>
-        
-        {/* 데이터 소스 태그 */}
-        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-          <span className="px-2 py-1 rounded bg-muted">FDA Official</span>
-          <span className="px-2 py-1 rounded bg-muted">Drugs.com</span>
-          <span className="px-2 py-1 rounded bg-muted">ASCO Post</span>
-          <span className="px-2 py-1 rounded bg-muted">NeurologyLive</span>
-        </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }
