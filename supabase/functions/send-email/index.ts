@@ -10,34 +10,23 @@ const corsHeaders = {
 interface EmailRequest {
   to: string;
   subject: string;
+  dateRangeText: string;
   stats: {
     total: number;
     oncology: number;
+    nonOncology: number;
     novelDrug: number;
+    novelOncology: number;
+    novelNonOncology: number;
     orphanDrug: number;
-    biosimilar: number;
-    bla: number;
-    nda: number;
+    origCount: number;
+    supplCount: number;
   };
-  filterInfo?: string[];
 }
 
 function generateEmailHtml(data: EmailRequest): string {
-  const { stats, filterInfo } = data;
+  const { stats, dateRangeText } = data;
   const now = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
-  const hasFilters = filterInfo && filterInfo.length > 0;
-
-  const filterSection = hasFilters
-    ? `
-    <!-- Filter Info -->
-    <div style="padding: 16px 24px; background: #fef3c7; border-bottom: 1px solid #fcd34d;">
-      <h3 style="margin: 0 0 8px 0; font-size: 14px; color: #92400e;">🔍 적용된 필터</h3>
-      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-        ${filterInfo.map((f) => `<span style="background: #fef9c3; color: #854d0e; padding: 4px 10px; border-radius: 6px; font-size: 13px; border: 1px solid #fcd34d;">${f}</span>`).join("")}
-      </div>
-    </div>
-    `
-    : "";
 
   return `
 <!DOCTYPE html>
@@ -47,52 +36,64 @@ function generateEmailHtml(data: EmailRequest): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background-color: #f9fafb;">
-  <div style="max-width: 700px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+  <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 24px; color: white;">
       <h1 style="margin: 0; font-size: 24px; font-weight: 600;">US FDA 승인 현황</h1>
       <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 14px;">미국 FDA 전문의약품 승인 데이터 요약</p>
     </div>
     
-    ${filterSection}
+    <!-- Date Range Section -->
+    <div style="padding: 16px 24px; background: #eff6ff; border-bottom: 1px solid #bfdbfe;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">📅</span>
+        <span style="font-size: 14px; color: #1e40af; font-weight: 600;">승인일: ${dateRangeText}</span>
+      </div>
+    </div>
     
-    <!-- Summary Stats -->
+    <!-- Summary Stats - 2x2 Grid -->
     <div style="padding: 24px; background: #f8fafc; border-bottom: 1px solid #e5e7eb;">
       <h2 style="margin: 0 0 16px 0; font-size: 16px; color: #374151;">📊 요약 통계</h2>
-      <!-- First row: 4 cards -->
-      <div style="display: flex; gap: 12px; margin-bottom: 12px;">
-        <div style="flex: 1; background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
-          <div style="font-size: 28px; font-weight: bold; color: #1e40af;">${stats.total}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">전체승인</div>
-        </div>
-        <div style="flex: 1; background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
-          <div style="font-size: 28px; font-weight: bold; color: #dc2626;">${stats.oncology}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">항암제</div>
-        </div>
-        <div style="flex: 1; background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
-          <div style="font-size: 28px; font-weight: bold; color: #2563eb;">${stats.novelDrug}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">신약</div>
-        </div>
-        <div style="flex: 1; background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
-          <div style="font-size: 28px; font-weight: bold; color: #7c3aed;">${stats.orphanDrug}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">희귀의약품</div>
-        </div>
-      </div>
-      <!-- Second row: 3 cards -->
-      <div style="display: flex; gap: 12px;">
-        <div style="flex: 1; background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
-          <div style="font-size: 28px; font-weight: bold; color: #16a34a;">${stats.biosimilar}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">바이오시밀러</div>
-        </div>
-        <div style="flex: 1; background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
-          <div style="font-size: 28px; font-weight: bold; color: #0891b2;">${stats.bla}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">BLA</div>
-        </div>
-        <div style="flex: 1; background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
-          <div style="font-size: 28px; font-weight: bold; color: #ea580c;">${stats.nda}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">NDA</div>
-        </div>
-      </div>
+      
+      <!-- Row 1 -->
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;">
+        <tr>
+          <td width="50%" style="padding-right: 6px;">
+            <div style="background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
+              <div style="font-size: 32px; font-weight: bold; color: #1e40af;">${stats.total}</div>
+              <div style="font-size: 13px; color: #374151; font-weight: 500; margin-top: 4px;">전체 승인</div>
+              <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">최초승인: ${stats.origCount}건 / 변경승인: ${stats.supplCount}건</div>
+            </div>
+          </td>
+          <td width="50%" style="padding-left: 6px;">
+            <div style="background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
+              <div style="font-size: 32px; font-weight: bold; color: #dc2626;">${stats.oncology}</div>
+              <div style="font-size: 13px; color: #374151; font-weight: 500; margin-top: 4px;">항암제</div>
+              <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">비항암제: ${stats.nonOncology}건</div>
+            </div>
+          </td>
+        </tr>
+      </table>
+      
+      <!-- Row 2 -->
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td width="50%" style="padding-right: 6px;">
+            <div style="background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
+              <div style="font-size: 32px; font-weight: bold; color: #2563eb;">${stats.novelDrug}</div>
+              <div style="font-size: 13px; color: #374151; font-weight: 500; margin-top: 4px;">신약 (Novel)</div>
+              <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">항암제 ${stats.novelOncology} / 비항암제 ${stats.novelNonOncology}</div>
+            </div>
+          </td>
+          <td width="50%" style="padding-left: 6px;">
+            <div style="background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
+              <div style="font-size: 32px; font-weight: bold; color: #7c3aed;">${stats.orphanDrug}</div>
+              <div style="font-size: 13px; color: #374151; font-weight: 500; margin-top: 4px;">희귀의약품</div>
+              <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">Orphan Drug</div>
+            </div>
+          </td>
+        </tr>
+      </table>
     </div>
     
     <!-- CTA Button -->

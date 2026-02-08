@@ -24,53 +24,33 @@ interface EmailSendProps {
   filters: FilterState;
 }
 
-// Helper to format filter info for display
-function formatFilterInfo(filters: FilterState): string[] {
-  const lines: string[] = [];
+// Helper to get date range text for email header
+function getDateRangeText(filters: FilterState): string {
+  if (filters.dateRange === "all") {
+    return "전체 기간";
+  }
   
-  // Date range
-  if (filters.dateRange !== "all") {
-    if (filters.dateRange === "custom") {
-      const start = filters.startDate ? format(filters.startDate, "yyyy-MM-dd") : "";
-      const end = filters.endDate ? format(filters.endDate, "yyyy-MM-dd") : "";
-      if (start || end) {
-        lines.push(`승인일: ${start || "~"} ~ ${end || "~"}`);
-      }
-    } else {
-      const rangeLabels: Record<string, string> = {
-        "1m": "최근 1개월",
-        "3m": "최근 3개월",
-        "6m": "최근 6개월",
-        "1y": "최근 1년",
-        "2y": "최근 2년",
-      };
-      lines.push(`승인일: ${rangeLabels[filters.dateRange] || filters.dateRange}`);
+  if (filters.dateRange === "custom") {
+    const start = filters.startDate ? format(filters.startDate, "yyyy-MM-dd") : "";
+    const end = filters.endDate ? format(filters.endDate, "yyyy-MM-dd") : "";
+    if (start && end) {
+      return `${start} ~ ${end}`;
+    } else if (start) {
+      return `${start} ~`;
+    } else if (end) {
+      return `~ ${end}`;
     }
+    return "전체 기간";
   }
   
-  if (filters.applicationType !== "all") {
-    lines.push(`신청유형: ${filters.applicationType}`);
-  }
-  if (filters.sponsor !== "all") {
-    lines.push(`제약사: ${filters.sponsor}`);
-  }
-  if (filters.therapeuticArea !== "all") {
-    lines.push(`치료영역: ${filters.therapeuticArea}`);
-  }
-  if (filters.isOncology !== "all") {
-    lines.push(`항암제: ${filters.isOncology === "true" ? "Y" : "N"}`);
-  }
-  if (filters.isBiosimilar !== "all") {
-    lines.push(`바이오시밀러: ${filters.isBiosimilar === "true" ? "Y" : "N"}`);
-  }
-  if (filters.isNovelDrug !== "all") {
-    lines.push(`신약: ${filters.isNovelDrug === "true" ? "Y" : "N"}`);
-  }
-  if (filters.isOrphanDrug !== "all") {
-    lines.push(`희귀의약품: ${filters.isOrphanDrug === "true" ? "Y" : "N"}`);
-  }
-  
-  return lines;
+  const rangeLabels: Record<string, string> = {
+    "1m": "최근 1개월",
+    "3m": "최근 3개월",
+    "6m": "최근 6개월",
+    "1y": "최근 1년",
+    "2y": "최근 2년",
+  };
+  return rangeLabels[filters.dateRange] || "전체 기간";
 }
 
 export function EmailSend({ filteredData, filters }: EmailSendProps) {
@@ -79,20 +59,20 @@ export function EmailSend({ filteredData, filters }: EmailSendProps) {
   const [isSending, setIsSending] = useState(false);
 
   const today = format(new Date(), "yyyy-MM-dd", { locale: ko });
+  const dateRangeText = getDateRangeText(filters);
   
-  // Calculate statistics
+  // Calculate statistics with sub-metrics
   const stats = {
     total: filteredData.length,
     oncology: filteredData.filter((d) => d.isOncology).length,
+    nonOncology: filteredData.filter((d) => !d.isOncology).length,
     novelDrug: filteredData.filter((d) => d.isNovelDrug).length,
+    novelOncology: filteredData.filter((d) => d.isNovelDrug && d.isOncology).length,
+    novelNonOncology: filteredData.filter((d) => d.isNovelDrug && !d.isOncology).length,
     orphanDrug: filteredData.filter((d) => d.isOrphanDrug).length,
-    biosimilar: filteredData.filter((d) => d.isBiosimilar).length,
-    bla: filteredData.filter((d) => d.applicationType === "BLA").length,
-    nda: filteredData.filter((d) => d.applicationType === "NDA").length,
+    origCount: filteredData.filter((d) => !d.supplementCategory?.includes("SUPPL")).length,
+    supplCount: filteredData.filter((d) => d.supplementCategory?.includes("SUPPL")).length,
   };
-
-  const filterInfo = formatFilterInfo(filters);
-  const hasActiveFilters = filterInfo.length > 0;
 
   const handleSend = async () => {
     if (!recipientEmail.trim()) {
@@ -113,8 +93,8 @@ export function EmailSend({ filteredData, filters }: EmailSendProps) {
         body: {
           to: recipientEmail,
           subject: `[FDA 승인 현황] ${today} 기준 ${stats.total}건`,
+          dateRangeText,
           stats,
-          filterInfo,
         },
       });
 
@@ -164,27 +144,30 @@ export function EmailSend({ filteredData, filters }: EmailSendProps) {
             <div className="space-y-2 text-sm">
               <p><strong>제목:</strong> [FDA 승인 현황] {today} 기준 {stats.total}건</p>
               
-              {hasActiveFilters && (
-                <div className="pt-2 border-t">
-                  <p className="text-xs text-muted-foreground mb-1">적용된 필터:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {filterInfo.map((info, idx) => (
-                      <span key={idx} className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">
-                        {info}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="pt-2 border-t">
+                <p className="text-xs text-muted-foreground mb-1">📅 승인일:</p>
+                <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
+                  {dateRangeText}
+                </span>
+              </div>
               
-              <div className="grid grid-cols-4 gap-2 pt-2 border-t text-xs">
-                <p>전체: <strong>{stats.total}건</strong></p>
-                <p>항암제: <strong>{stats.oncology}건</strong></p>
-                <p>신약: <strong>{stats.novelDrug}건</strong></p>
-                <p>희귀의약품: <strong>{stats.orphanDrug}건</strong></p>
-                <p>바이오시밀러: <strong>{stats.biosimilar}건</strong></p>
-                <p>BLA: <strong>{stats.bla}건</strong></p>
-                <p>NDA: <strong>{stats.nda}건</strong></p>
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t text-xs">
+                <div className="p-2 bg-background rounded border">
+                  <p className="font-medium">전체 승인: <strong>{stats.total}건</strong></p>
+                  <p className="text-muted-foreground">최초 {stats.origCount} / 변경 {stats.supplCount}</p>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <p className="font-medium">항암제: <strong>{stats.oncology}건</strong></p>
+                  <p className="text-muted-foreground">비항암제: {stats.nonOncology}건</p>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <p className="font-medium">신약: <strong>{stats.novelDrug}건</strong></p>
+                  <p className="text-muted-foreground">항암 {stats.novelOncology} / 비항암 {stats.novelNonOncology}</p>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <p className="font-medium">희귀의약품: <strong>{stats.orphanDrug}건</strong></p>
+                  <p className="text-muted-foreground">Orphan Drug</p>
+                </div>
               </div>
               <p className="pt-2 border-t text-muted-foreground">
                 대시보드 링크가 포함됩니다.
