@@ -70,8 +70,28 @@ export function EmailSend({ filteredData, filters }: EmailSendProps) {
     novelOncology: filteredData.filter((d) => d.isNovelDrug && d.isOncology).length,
     novelNonOncology: filteredData.filter((d) => d.isNovelDrug && !d.isOncology).length,
     orphanDrug: filteredData.filter((d) => d.isOrphanDrug).length,
+    biosimilar: filteredData.filter((d) => d.isBiosimilar).length,
     origCount: filteredData.filter((d) => !d.supplementCategory?.includes("SUPPL")).length,
     supplCount: filteredData.filter((d) => d.supplementCategory?.includes("SUPPL")).length,
+  };
+
+  // Prepare drugs array for Excel attachment
+  const prepareDrugsForEmail = () => {
+    return filteredData.map((drug) => ({
+      approvalDate: drug.approvalDate,
+      brandName: drug.brandName,
+      activeIngredient: drug.activeIngredient,
+      ndaBlaNumber: drug.ndaBlaNumber,
+      sponsor: drug.sponsor,
+      therapeuticArea: drug.therapeuticArea,
+      indicationFull: drug.indicationFull,
+      notes: drug.notes || "",
+      isOncology: drug.isOncology,
+      isBiosimilar: drug.isBiosimilar,
+      isNovelDrug: drug.isNovelDrug,
+      isOrphanDrug: drug.isOrphanDrug,
+      supplementCategory: drug.supplementCategory || "",
+    }));
   };
 
   const handleSend = async () => {
@@ -89,18 +109,21 @@ export function EmailSend({ filteredData, filters }: EmailSendProps) {
 
     setIsSending(true);
     try {
+      const drugs = prepareDrugsForEmail();
+      
       const { data, error } = await supabase.functions.invoke("send-email", {
         body: {
           to: recipientEmail,
           subject: `[FDA 승인 현황] ${today} 기준 ${stats.total}건`,
           dateRangeText,
           stats,
+          drugs,
         },
       });
 
       if (error) throw error;
 
-      toast.success(`${recipientEmail}로 이메일이 발송되었습니다.`);
+      toast.success(`${recipientEmail}로 이메일이 발송되었습니다. (엑셀 첨부됨)`);
       setOpen(false);
       setRecipientEmail("");
     } catch (error: any) {
@@ -169,9 +192,13 @@ export function EmailSend({ filteredData, filters }: EmailSendProps) {
                   <p className="text-muted-foreground">Orphan Drug</p>
                 </div>
               </div>
-              <p className="pt-2 border-t text-muted-foreground">
-                대시보드 링크가 포함됩니다.
-              </p>
+              <div className="pt-2 border-t">
+                <p className="text-muted-foreground flex items-center gap-2">
+                  <span>📎</span>
+                  <span>엑셀 파일 첨부 (5개 시트: 요약, 국문 상세, English Details, 최초승인, 변경승인)</span>
+                </p>
+                <p className="text-muted-foreground mt-1">대시보드 링크가 포함됩니다.</p>
+              </div>
             </div>
           </div>
         </div>
