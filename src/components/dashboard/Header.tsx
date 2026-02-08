@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Calendar, CalendarCheck, Database, FileText, Cloud, CloudUpload, Loader2 } from "lucide-react";
+import { Calendar, CalendarCheck, Database, FileText, Cloud, CloudUpload, Loader2, Settings2, ChevronDown, ChevronUp } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { EmailSend } from "./EmailSend";
@@ -22,6 +23,7 @@ interface HeaderProps {
 
 export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCloud, cloudVersion }: HeaderProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
 
   const handleConfirm = async () => {
     if (data.length === 0) {
@@ -65,7 +67,7 @@ export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCl
         </div>
         
         {/* 서브타이틀 + 데이터 정보 + 액션 버튼 */}
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm relative">
           <span className="text-muted-foreground">미국 FDA 전문의약품 승인 데이터 대시보드</span>
           
           <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -85,29 +87,44 @@ export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCl
           
           <div className="flex items-center gap-2">
             <UsageGuide />
-            <FdaValidation data={data} onDataUpdate={onDataUpdate} />
             <FdaNovelDrugsExport data={data} filteredData={filteredData} />
-            <EmailSend filteredData={filteredData} />
-            <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} />
-            <Button 
-              variant="default" 
-              size="sm" 
-              className="gap-2"
-              onClick={handleConfirm}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  저장 중...
-                </>
-              ) : (
-                <>
-                  <CloudUpload className="h-4 w-4" />
-                  확정
-                </>
-              )}
-            </Button>
+            
+            <Collapsible open={isAdminOpen} onOpenChange={setIsAdminOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Settings2 className="h-4 w-4" />
+                  관리자
+                  {isAdminOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                </Button>
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent className="absolute right-0 mt-2 z-10">
+                <div className="flex items-center gap-2 p-2 bg-background border rounded-md shadow-md">
+                  <FdaValidation data={data} onDataUpdate={onDataUpdate} />
+                  <EmailSend filteredData={filteredData} />
+                  <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} />
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="gap-2"
+                    onClick={handleConfirm}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        저장 중...
+                      </>
+                    ) : (
+                      <>
+                        <CloudUpload className="h-4 w-4" />
+                        확정
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </div>
         
