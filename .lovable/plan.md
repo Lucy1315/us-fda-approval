@@ -1,116 +1,114 @@
 
-# 이메일 발송 기능 구현 계획
+# 대시보드 관리자 탭 분리 계획
 
-## 개요
-대시보드에 "이메일 보내기" 버튼을 추가하고, 현재 필터링된 FDA 승인 데이터를 이메일로 발송하는 기능을 구현합니다.
-
----
-
-## 추천 서비스: Resend
-
-| 항목 | 내용 |
-|------|------|
-| 서비스 | Resend (https://resend.com) |
-| 무료 티어 | 월 3,000건 |
-| 장점 | 현대적 API, 간단한 설정, HTML 이메일 지원 |
-| 필요 작업 | 1) 회원가입 2) 도메인 인증 3) API 키 발급 |
+## 요약
+대시보드 헤더에 **탭 구조**를 도입하여 일반 사용자와 관리자 기능을 분리합니다.
 
 ---
 
-## 구현 내용
+## 변경 내용
 
-### 1. 새 컴포넌트 생성
-**파일**: `src/components/dashboard/EmailSend.tsx`
+### 현재 상태
+- 모든 버튼이 헤더에 한 줄로 나열됨
+  - 사용 방법, FDA 검증, 엑셀 다운로드, 이메일, 엑셀 업로드, 확정
 
-- 이메일 보내기 버튼 (Mail 아이콘)
-- Dialog로 수신자 이메일 입력
-- 이메일 제목 및 내용 미리보기
-- 발송 확인 버튼
+### 변경 후 구조
 
-### 2. Edge Function 생성
-**파일**: `supabase/functions/send-email/index.ts`
-
-- Resend API 연동
-- HTML 이메일 템플릿 생성
-- 필터링된 데이터 요약 포함
-- 에러 핸들링
-
-### 3. Header 컴포넌트 수정
-**파일**: `src/components/dashboard/Header.tsx`
-
-- EmailSend 컴포넌트 추가
-- filteredData props 전달
+| 탭 | 포함 버튼 |
+|---|---|
+| **기본 뷰** (탭 없음) | 사용 방법, 엑셀 다운로드 |
+| **관리자** (클릭 시 확장) | FDA 검증, 이메일, 엑셀 업로드, 확정 |
 
 ---
 
-## 기술 세부사항
+## UI 구현 방식
 
-### Edge Function 구조
+관리자 버튼을 **Collapsible** 또는 **탭 토글** 방식으로 숨기고, "관리자" 버튼 클릭 시 확장되도록 합니다:
 
 ```text
-┌─────────────────────────────────────────────────┐
-│  Frontend (EmailSend.tsx)                       │
-│  - 수신자 이메일 입력                            │
-│  - 발송할 데이터 요약 정보                       │
-└───────────────────┬─────────────────────────────┘
-                    │ POST /functions/v1/send-email
-                    ▼
-┌─────────────────────────────────────────────────┐
-│  Edge Function (send-email/index.ts)            │
-│  - RESEND_API_KEY 환경변수 사용                  │
-│  - HTML 이메일 템플릿 생성                       │
-│  - Resend API 호출                              │
-└───────────────────┬─────────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────────────┐
-│  Resend API                                     │
-│  - 이메일 발송                                   │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  [사용 방법]  [엑셀 다운로드]  │  [관리자 ▼]                        │
+└──────────────────────────────────────────────────────────────────────┘
+                                        ↓ 클릭 시 확장
+┌──────────────────────────────────────────────────────────────────────┐
+│  [사용 방법]  [엑셀 다운로드]  │  [관리자 ▲]                        │
+│                               │  [FDA 검증] [이메일] [엑셀 업로드] [확정]  │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-### 이메일 내용 구성
+---
 
-| 섹션 | 내용 |
-|------|------|
-| 제목 | `[FDA 승인 현황] YYYY-MM-DD 기준 N건` |
-| 요약 | 전체 건수, 항암제, 신약, 바이오시밀러 통계 |
-| 테이블 | 승인일, 브랜드명, 적응증 (상위 10건) |
-| 푸터 | 대시보드 링크, 발송 시각 |
+## 파일 수정 목록
 
-### 필요한 Secret
-
-| 이름 | 설명 | 발급 위치 |
-|------|------|-----------|
-| `RESEND_API_KEY` | Resend API 키 | https://resend.com/api-keys |
+### 1. `src/components/dashboard/Header.tsx`
+- 상태 추가: `isAdminOpen` (관리자 패널 토글)
+- 기본 버튼 영역: `UsageGuide` + `FdaNovelDrugsExport` (엑셀 다운로드)
+- 관리자 버튼 추가: 클릭 시 관리자 도구 패널 토글
+- 관리자 패널: `FdaValidation`, `EmailSend`, `ExcelUpload`, "확정" 버튼
 
 ---
 
-## 사용자 설정 단계
+## 기술적 세부사항
 
-1. https://resend.com 에서 회원가입
-2. https://resend.com/domains 에서 도메인 인증 (또는 테스트용 onboarding@resend.dev 사용)
-3. https://resend.com/api-keys 에서 API 키 생성
-4. Lovable에서 RESEND_API_KEY 시크릿 등록
+### Header.tsx 수정 내용
+
+```tsx
+// 새로운 import
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Settings2, ChevronDown, ChevronUp } from "lucide-react";
+
+// 상태 추가
+const [isAdminOpen, setIsAdminOpen] = useState(false);
+
+// 기본 버튼 영역 (항상 표시)
+<div className="flex items-center gap-2">
+  <UsageGuide />
+  <FdaNovelDrugsExport data={data} filteredData={filteredData} />
+  
+  {/* 관리자 토글 버튼 */}
+  <Collapsible open={isAdminOpen} onOpenChange={setIsAdminOpen}>
+    <CollapsibleTrigger asChild>
+      <Button variant="outline" size="sm" className="gap-2">
+        <Settings2 className="h-4 w-4" />
+        관리자
+        {isAdminOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+      </Button>
+    </CollapsibleTrigger>
+    
+    <CollapsibleContent>
+      {/* 관리자 도구 패널 */}
+      <div className="flex items-center gap-2 mt-2 p-2 bg-muted/50 rounded-md">
+        <FdaValidation data={data} onDataUpdate={onDataUpdate} />
+        <EmailSend filteredData={filteredData} />
+        <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} />
+        <Button variant="default" size="sm" onClick={handleConfirm} disabled={isSaving}>
+          {/* 확정 버튼 */}
+        </Button>
+      </div>
+    </CollapsibleContent>
+  </Collapsible>
+</div>
+```
 
 ---
 
-## 생성/수정 파일
+## 예상 결과
 
-| 파일 | 작업 |
-|------|------|
-| `src/components/dashboard/EmailSend.tsx` | 신규 생성 |
-| `supabase/functions/send-email/index.ts` | 신규 생성 |
-| `src/components/dashboard/Header.tsx` | EmailSend 추가 |
+| 항목 | 설명 |
+|---|---|
+| 기본 화면 | 사용 방법, 엑셀 다운로드만 보임 |
+| 관리자 클릭 | FDA 검증, 이메일, 엑셀 업로드, 확정 버튼이 펼쳐짐 |
+| 인증 불필요 | 별도 로그인 없이 누구나 관리자 기능 접근 가능 |
 
 ---
 
-## 대안 서비스 (Resend 외)
+## 구현 순서
 
-사용자가 다른 서비스를 원할 경우:
-
-| 서비스 | API 키 발급 URL |
-|--------|-----------------|
-| Brevo | https://app.brevo.com/settings/keys/api |
-| SendGrid | https://app.sendgrid.com/settings/api_keys |
-| Mailgun | https://app.mailgun.com/app/account/security/api_keys |
+1. `Header.tsx` 파일 수정
+   - `Collapsible` 컴포넌트 import
+   - `isAdminOpen` 상태 추가
+   - 버튼 영역 재구성 (기본 + 관리자 토글)
+   
+2. 테스트
+   - 관리자 버튼 토글 동작 확인
+   - 각 버튼 기능 정상 작동 확인
