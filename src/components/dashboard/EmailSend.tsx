@@ -34,8 +34,10 @@ export function EmailSend({ filteredData }: EmailSendProps) {
     total: filteredData.length,
     oncology: filteredData.filter((d) => d.isOncology).length,
     novelDrug: filteredData.filter((d) => d.isNovelDrug).length,
-    biosimilar: filteredData.filter((d) => d.isBiosimilar).length,
     orphanDrug: filteredData.filter((d) => d.isOrphanDrug).length,
+    biosimilar: filteredData.filter((d) => d.isBiosimilar).length,
+    bla: filteredData.filter((d) => d.applicationType === "BLA").length,
+    nda: filteredData.filter((d) => d.applicationType === "NDA").length,
   };
 
   const handleSend = async () => {
@@ -58,16 +60,6 @@ export function EmailSend({ filteredData }: EmailSendProps) {
           to: recipientEmail,
           subject: `[FDA 승인 현황] ${today} 기준 ${stats.total}건`,
           stats,
-          items: filteredData.slice(0, 10).map((d) => ({
-            approvalDate: d.approvalDate,
-            brandName: d.brandName,
-            activeIngredient: d.activeIngredient,
-            indicationFull: d.indicationFull,
-            isOncology: d.isOncology,
-            isNovelDrug: d.isNovelDrug,
-            isBiosimilar: d.isBiosimilar,
-          })),
-          totalCount: filteredData.length,
         },
       });
 
@@ -116,14 +108,17 @@ export function EmailSend({ filteredData }: EmailSendProps) {
             <h4 className="font-medium text-sm mb-3">발송 내용 미리보기</h4>
             <div className="space-y-2 text-sm">
               <p><strong>제목:</strong> [FDA 승인 현황] {today} 기준 {stats.total}건</p>
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+              <div className="grid grid-cols-4 gap-2 pt-2 border-t text-xs">
                 <p>전체: <strong>{stats.total}건</strong></p>
                 <p>항암제: <strong>{stats.oncology}건</strong></p>
                 <p>신약: <strong>{stats.novelDrug}건</strong></p>
+                <p>희귀의약품: <strong>{stats.orphanDrug}건</strong></p>
                 <p>바이오시밀러: <strong>{stats.biosimilar}건</strong></p>
+                <p>BLA: <strong>{stats.bla}건</strong></p>
+                <p>NDA: <strong>{stats.nda}건</strong></p>
               </div>
               <p className="pt-2 border-t text-muted-foreground">
-                상위 10건의 상세 데이터가 포함됩니다.
+                대시보드 링크가 포함됩니다.
               </p>
             </div>
           </div>
