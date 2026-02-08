@@ -13,16 +13,19 @@ import { DrugApproval } from "@/data/fdaData";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+import { FilterState } from "./Filters";
+
 interface HeaderProps {
   onDataUpdate: (data: DrugApproval[]) => void;
   data: DrugApproval[];
   filteredData: DrugApproval[];
+  filters: FilterState;
   saveToCloud: (data: DrugApproval[], notes?: string) => Promise<boolean>;
   isFromCloud: boolean;
   cloudVersion: number | null;
 }
 
-export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCloud, cloudVersion }: HeaderProps) {
+export function Header({ onDataUpdate, data, filteredData, filters, saveToCloud, isFromCloud, cloudVersion }: HeaderProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
@@ -142,7 +145,7 @@ export function Header({ onDataUpdate, data, filteredData, saveToCloud, isFromCl
                   <CollapsibleContent className="absolute right-0 mt-2 z-10">
                     <div className="flex items-center gap-2 p-2 bg-background border rounded-md shadow-md">
                       <FdaValidation data={data} onDataUpdate={onDataUpdate} />
-                      <EmailSend filteredData={filteredData} />
+                      <EmailSend filteredData={filteredData} filters={filters} />
                       <ExcelUpload onDataUpdate={onDataUpdate} currentData={data} />
                       <Button 
                         variant="default" 

@@ -19,11 +19,25 @@ interface EmailRequest {
     bla: number;
     nda: number;
   };
+  filterInfo?: string[];
 }
 
 function generateEmailHtml(data: EmailRequest): string {
-  const { stats } = data;
+  const { stats, filterInfo } = data;
   const now = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+  const hasFilters = filterInfo && filterInfo.length > 0;
+
+  const filterSection = hasFilters
+    ? `
+    <!-- Filter Info -->
+    <div style="padding: 16px 24px; background: #fef3c7; border-bottom: 1px solid #fcd34d;">
+      <h3 style="margin: 0 0 8px 0; font-size: 14px; color: #92400e;">🔍 적용된 필터</h3>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        ${filterInfo.map((f) => `<span style="background: #fef9c3; color: #854d0e; padding: 4px 10px; border-radius: 6px; font-size: 13px; border: 1px solid #fcd34d;">${f}</span>`).join("")}
+      </div>
+    </div>
+    `
+    : "";
 
   return `
 <!DOCTYPE html>
@@ -39,6 +53,8 @@ function generateEmailHtml(data: EmailRequest): string {
       <h1 style="margin: 0; font-size: 24px; font-weight: 600;">US FDA 승인 현황</h1>
       <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 14px;">미국 FDA 전문의약품 승인 데이터 요약</p>
     </div>
+    
+    ${filterSection}
     
     <!-- Summary Stats -->
     <div style="padding: 24px; background: #f8fafc; border-bottom: 1px solid #e5e7eb;">

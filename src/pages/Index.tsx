@@ -99,6 +99,7 @@ const Index = () => {
           onDataUpdate={updateData}
           data={data}
           filteredData={filteredData}
+          filters={filters}
           saveToCloud={saveToCloud}
           isFromCloud={isFromCloud}
           cloudVersion={cloudVersion}
