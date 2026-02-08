@@ -16,13 +16,64 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { DrugApproval } from "@/data/fdaData";
+import { FilterState } from "./Filters";
 import { supabase } from "@/integrations/supabase/client";
 
 interface EmailSendProps {
   filteredData: DrugApproval[];
+  filters: FilterState;
 }
 
-export function EmailSend({ filteredData }: EmailSendProps) {
+// Helper to format filter info for display
+function formatFilterInfo(filters: FilterState): string[] {
+  const lines: string[] = [];
+  
+  // Date range
+  if (filters.dateRange !== "all") {
+    if (filters.dateRange === "custom") {
+      const start = filters.startDate ? format(filters.startDate, "yyyy-MM-dd") : "";
+      const end = filters.endDate ? format(filters.endDate, "yyyy-MM-dd") : "";
+      if (start || end) {
+        lines.push(`승인일: ${start || "~"} ~ ${end || "~"}`);
+      }
+    } else {
+      const rangeLabels: Record<string, string> = {
+        "1m": "최근 1개월",
+        "3m": "최근 3개월",
+        "6m": "최근 6개월",
+        "1y": "최근 1년",
+        "2y": "최근 2년",
+      };
+      lines.push(`승인일: ${rangeLabels[filters.dateRange] || filters.dateRange}`);
+    }
+  }
+  
+  if (filters.applicationType !== "all") {
+    lines.push(`신청유형: ${filters.applicationType}`);
+  }
+  if (filters.sponsor !== "all") {
+    lines.push(`제약사: ${filters.sponsor}`);
+  }
+  if (filters.therapeuticArea !== "all") {
+    lines.push(`치료영역: ${filters.therapeuticArea}`);
+  }
+  if (filters.isOncology !== "all") {
+    lines.push(`항암제: ${filters.isOncology === "true" ? "Y" : "N"}`);
+  }
+  if (filters.isBiosimilar !== "all") {
+    lines.push(`바이오시밀러: ${filters.isBiosimilar === "true" ? "Y" : "N"}`);
+  }
+  if (filters.isNovelDrug !== "all") {
+    lines.push(`신약: ${filters.isNovelDrug === "true" ? "Y" : "N"}`);
+  }
+  if (filters.isOrphanDrug !== "all") {
+    lines.push(`희귀의약품: ${filters.isOrphanDrug === "true" ? "Y" : "N"}`);
+  }
+  
+  return lines;
+}
+
+export function EmailSend({ filteredData, filters }: EmailSendProps) {
   const [open, setOpen] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -39,6 +90,9 @@ export function EmailSend({ filteredData }: EmailSendProps) {
     bla: filteredData.filter((d) => d.applicationType === "BLA").length,
     nda: filteredData.filter((d) => d.applicationType === "NDA").length,
   };
+
+  const filterInfo = formatFilterInfo(filters);
+  const hasActiveFilters = filterInfo.length > 0;
 
   const handleSend = async () => {
     if (!recipientEmail.trim()) {
@@ -60,6 +114,7 @@ export function EmailSend({ filteredData }: EmailSendProps) {
           to: recipientEmail,
           subject: `[FDA 승인 현황] ${today} 기준 ${stats.total}건`,
           stats,
+          filterInfo,
         },
       });
 
@@ -108,6 +163,20 @@ export function EmailSend({ filteredData }: EmailSendProps) {
             <h4 className="font-medium text-sm mb-3">발송 내용 미리보기</h4>
             <div className="space-y-2 text-sm">
               <p><strong>제목:</strong> [FDA 승인 현황] {today} 기준 {stats.total}건</p>
+              
+              {hasActiveFilters && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground mb-1">적용된 필터:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {filterInfo.map((info, idx) => (
+                      <span key={idx} className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs">
+                        {info}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <div className="grid grid-cols-4 gap-2 pt-2 border-t text-xs">
                 <p>전체: <strong>{stats.total}건</strong></p>
                 <p>항암제: <strong>{stats.oncology}건</strong></p>
