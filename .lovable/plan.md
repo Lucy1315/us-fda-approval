@@ -1,66 +1,116 @@
 
-# 시스템 개요 마크다운 문서 작성
+# 이메일 발송 기능 구현 계획
 
 ## 개요
-이전에 설명한 대시보드 시스템 개요(데이터 구조, 항암제 필터링 키워드, 수집방법, 필터링 프로세스, 데이터 출처/검증, 기술스택, AI 관여 필요 항목)를 별도의 마크다운 파일로 작성합니다.
+대시보드에 "이메일 보내기" 버튼을 추가하고, 현재 필터링된 FDA 승인 데이터를 이메일로 발송하는 기능을 구현합니다.
 
 ---
 
-## 생성할 파일
+## 추천 서비스: Resend
 
-**파일 경로**: `docs/SYSTEM_OVERVIEW.md`
+| 항목 | 내용 |
+|------|------|
+| 서비스 | Resend (https://resend.com) |
+| 무료 티어 | 월 3,000건 |
+| 장점 | 현대적 API, 간단한 설정, HTML 이메일 지원 |
+| 필요 작업 | 1) 회원가입 2) 도메인 인증 3) API 키 발급 |
 
 ---
 
-## 문서 내용
+## 구현 내용
 
-### 1. 데이터 구조 표
-| 분류 | 필드 | 타입 | 설명 | 데이터 출처 |
-|------|------|------|------|-------------|
-| 식별정보 | applicationNo | string | 허가번호 | FDA |
-| 식별정보 | applicationType | "NDA"/"BLA" | 신청 유형 | FDA |
-| ... (21개 필드 전체) |
+### 1. 새 컴포넌트 생성
+**파일**: `src/components/dashboard/EmailSend.tsx`
 
-### 2. 항암제 필터링 키워드
-- `isOncology` = true/false (수동 판정)
-- 자동 판정 불가 사유 및 키워드 목록
+- 이메일 보내기 버튼 (Mail 아이콘)
+- Dialog로 수신자 이메일 입력
+- 이메일 제목 및 내용 미리보기
+- 발송 확인 버튼
 
-### 3. 데이터 수집 방법
-- Drugs@FDA (CDER)
-- CBER Approvals
-- openFDA API
-- FDA Press Releases
-- 엑셀 업로드
+### 2. Edge Function 생성
+**파일**: `supabase/functions/send-email/index.ts`
 
-### 4. 필터링 프로세스 표
-| 필터 | 적용 방식 | 기준 |
-|------|-----------|------|
-| 기간 | 오늘 날짜 기준 상대 계산 | `new Date()` |
-| 항암제 | Boolean 필드 매칭 | `isOncology` |
-| ... |
+- Resend API 연동
+- HTML 이메일 템플릿 생성
+- 필터링된 데이터 요약 포함
+- 에러 핸들링
 
-### 5. 데이터 출처 및 검증 표
-| 항목 | 출처 | 검증 방법 |
+### 3. Header 컴포넌트 수정
+**파일**: `src/components/dashboard/Header.tsx`
+
+- EmailSend 컴포넌트 추가
+- filteredData props 전달
+
+---
+
+## 기술 세부사항
+
+### Edge Function 구조
+
+```text
+┌─────────────────────────────────────────────────┐
+│  Frontend (EmailSend.tsx)                       │
+│  - 수신자 이메일 입력                            │
+│  - 발송할 데이터 요약 정보                       │
+└───────────────────┬─────────────────────────────┘
+                    │ POST /functions/v1/send-email
+                    ▼
+┌─────────────────────────────────────────────────┐
+│  Edge Function (send-email/index.ts)            │
+│  - RESEND_API_KEY 환경변수 사용                  │
+│  - HTML 이메일 템플릿 생성                       │
+│  - Resend API 호출                              │
+└───────────────────┬─────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────────────┐
+│  Resend API                                     │
+│  - 이메일 발송                                   │
+└─────────────────────────────────────────────────┘
+```
+
+### 이메일 내용 구성
+
+| 섹션 | 내용 |
+|------|------|
+| 제목 | `[FDA 승인 현황] YYYY-MM-DD 기준 N건` |
+| 요약 | 전체 건수, 항암제, 신약, 바이오시밀러 통계 |
+| 테이블 | 승인일, 브랜드명, 적응증 (상위 10건) |
+| 푸터 | 대시보드 링크, 발송 시각 |
+
+### 필요한 Secret
+
+| 이름 | 설명 | 발급 위치 |
 |------|------|-----------|
-| 허가번호, 승인일 | Drugs@FDA | openFDA API |
-| 브랜드명 | Drugs@FDA | openFDA API |
-| ... |
-
-### 6. 기술 스택 표
-| 분류 | 기술 | 용도 |
-|------|------|------|
-| Frontend | React 18 + TypeScript | UI 렌더링 |
-| ... |
-
-### 7. AI/수동 개입 필요 항목 (별도 섹션)
-| 필드 | 개입 유형 | 이유 |
-|------|-----------|------|
-| therapeuticArea | 수동 분류 | openFDA에 치료영역 필드 없음 |
-| isOncology | 수동 판정 | 항암제 분류 기준 부재 |
-| indicationFull (국문) | AI 번역 | 적응증 국문화 필요 |
-| notes | AI 생성 | 임상적 맥락 요약 |
+| `RESEND_API_KEY` | Resend API 키 | https://resend.com/api-keys |
 
 ---
 
-## 수정 파일
-1. `docs/SYSTEM_OVERVIEW.md` (신규 생성)
+## 사용자 설정 단계
+
+1. https://resend.com 에서 회원가입
+2. https://resend.com/domains 에서 도메인 인증 (또는 테스트용 onboarding@resend.dev 사용)
+3. https://resend.com/api-keys 에서 API 키 생성
+4. Lovable에서 RESEND_API_KEY 시크릿 등록
+
+---
+
+## 생성/수정 파일
+
+| 파일 | 작업 |
+|------|------|
+| `src/components/dashboard/EmailSend.tsx` | 신규 생성 |
+| `supabase/functions/send-email/index.ts` | 신규 생성 |
+| `src/components/dashboard/Header.tsx` | EmailSend 추가 |
+
+---
+
+## 대안 서비스 (Resend 외)
+
+사용자가 다른 서비스를 원할 경우:
+
+| 서비스 | API 키 발급 URL |
+|--------|-----------------|
+| Brevo | https://app.brevo.com/settings/keys/api |
+| SendGrid | https://app.sendgrid.com/settings/api_keys |
+| Mailgun | https://app.mailgun.com/app/account/security/api_keys |
