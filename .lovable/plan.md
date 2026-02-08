@@ -1,86 +1,66 @@
 
-# 승인일 필터 로직 수정 및 헤더에 오늘 날짜 표시
+# 시스템 개요 마크다운 문서 작성
 
-## 요약
-현재 승인일 필터가 "데이터 수집일(최신 승인일)"을 기준으로 작동하고 있어 실제 오늘 날짜와 맞지 않습니다. 이를 **오늘 날짜 기준**으로 변경하고, 헤더에 오늘 날짜를 명시합니다.
-
----
-
-## 변경 내용
-
-### 1. 필터 로직 수정 (`Filters.tsx`)
-- **기존**: 데이터셋 내 최신 승인일을 `reference`로 사용
-- **변경**: 시스템의 오늘 날짜(`new Date()`)를 기준으로 사용
-
-**수정 전:**
-```
-reference = 데이터셋의 최신 승인일 (예: 2025-12-30)
-1개월 필터 = 2025-11-30 ~ 2025-12-30
-```
-
-**수정 후:**
-```
-reference = 오늘 날짜 (예: 2026-02-02)
-1개월 필터 = 2026-01-02 ~ 2026-02-02
-```
-
-### 2. 헤더에 오늘 날짜 추가 (`Header.tsx`)
-- 기존 "수집일" 옆에 "기준일: 오늘 날짜" 표시
-- 형식: `기준일: 2026-02-02 (일)`
+## 개요
+이전에 설명한 대시보드 시스템 개요(데이터 구조, 항암제 필터링 키워드, 수집방법, 필터링 프로세스, 데이터 출처/검증, 기술스택, AI 관여 필요 항목)를 별도의 마크다운 파일로 작성합니다.
 
 ---
 
-## 기술적 세부사항
+## 생성할 파일
 
-### Filters.tsx 수정
-`applyFilters` 함수에서 reference 계산 로직 변경:
-
-```typescript
-// 기존: 데이터셋 최신 승인일 사용
-const reference = (() => {
-  if (!data.length) { return today; }
-  let max = parseLocalDate(data[0].approvalDate);
-  for (let i = 1; i < data.length; i++) { ... }
-  return max;
-})();
-
-// 변경: 항상 오늘 날짜 사용
-const reference = (() => {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-})();
-```
-
-### Header.tsx 수정
-오늘 날짜를 동적으로 표시:
-
-```typescript
-import { format } from "date-fns";
-import { ko } from "date-fns/locale";
-
-// 컴포넌트 내부
-const today = new Date();
-const todayFormatted = format(today, "yyyy-MM-dd (EEE)", { locale: ko });
-
-// JSX
-<div className="flex items-center gap-1.5 text-muted-foreground">
-  <CalendarCheck className="h-4 w-4" />
-  <span>기준일: <strong className="text-foreground">{todayFormatted}</strong></span>
-</div>
-```
+**파일 경로**: `docs/SYSTEM_OVERVIEW.md`
 
 ---
 
-## 예상 결과
+## 문서 내용
 
-| 구분 | 기존 | 변경 후 |
-|------|------|---------|
-| 기준일 | 2025-12-30 (데이터 최신일) | 2026-02-02 (오늘) |
-| 1개월 필터 범위 | 2025-11-30 ~ 2025-12-30 | 2026-01-02 ~ 2026-02-02 |
-| 헤더 표시 | 수집일: 2026-01-29 | 수집일: 2026-01-29 / 기준일: 2026-02-02 |
+### 1. 데이터 구조 표
+| 분류 | 필드 | 타입 | 설명 | 데이터 출처 |
+|------|------|------|------|-------------|
+| 식별정보 | applicationNo | string | 허가번호 | FDA |
+| 식별정보 | applicationType | "NDA"/"BLA" | 신청 유형 | FDA |
+| ... (21개 필드 전체) |
+
+### 2. 항암제 필터링 키워드
+- `isOncology` = true/false (수동 판정)
+- 자동 판정 불가 사유 및 키워드 목록
+
+### 3. 데이터 수집 방법
+- Drugs@FDA (CDER)
+- CBER Approvals
+- openFDA API
+- FDA Press Releases
+- 엑셀 업로드
+
+### 4. 필터링 프로세스 표
+| 필터 | 적용 방식 | 기준 |
+|------|-----------|------|
+| 기간 | 오늘 날짜 기준 상대 계산 | `new Date()` |
+| 항암제 | Boolean 필드 매칭 | `isOncology` |
+| ... |
+
+### 5. 데이터 출처 및 검증 표
+| 항목 | 출처 | 검증 방법 |
+|------|------|-----------|
+| 허가번호, 승인일 | Drugs@FDA | openFDA API |
+| 브랜드명 | Drugs@FDA | openFDA API |
+| ... |
+
+### 6. 기술 스택 표
+| 분류 | 기술 | 용도 |
+|------|------|------|
+| Frontend | React 18 + TypeScript | UI 렌더링 |
+| ... |
+
+### 7. AI/수동 개입 필요 항목 (별도 섹션)
+| 필드 | 개입 유형 | 이유 |
+|------|-----------|------|
+| therapeuticArea | 수동 분류 | openFDA에 치료영역 필드 없음 |
+| isOncology | 수동 판정 | 항암제 분류 기준 부재 |
+| indicationFull (국문) | AI 번역 | 적응증 국문화 필요 |
+| notes | AI 생성 | 임상적 맥락 요약 |
 
 ---
 
 ## 수정 파일
-1. `src/components/dashboard/Filters.tsx` - applyFilters 함수 수정
-2. `src/components/dashboard/Header.tsx` - 오늘 날짜 표시 추가
+1. `docs/SYSTEM_OVERVIEW.md` (신규 생성)
