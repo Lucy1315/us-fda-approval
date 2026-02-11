@@ -1,70 +1,104 @@
 
 
-# 이메일 엑셀 첨부 기능 추가 계획
+# 프로젝트 소개 PPT 생성 기능 구현
 
-## ✅ 구현 완료
-
-이메일 발송 시 **필터로 설정한 기간의 데이터를 엑셀 파일로 생성**하여 첨부 파일로 함께 전송합니다.
-
----
-
-## 변경 내용
-
-### 변경 전
-| 항목 | 현재 |
-|---|---|
-| 이메일 발송 | 통계 요약 + 대시보드 링크만 전송 |
-| 엑셀 다운로드 | 별도 버튼으로 브라우저에서 다운로드 |
-| 첨부 파일 | 없음 |
-
-### 변경 후
-| 항목 | 변경 후 |
-|---|---|
-| 이메일 발송 | 통계 요약 + 대시보드 링크 + 엑셀 첨부 |
-| 엑셀 생성 | Edge Function 내에서 서버사이드 생성 |
-| 첨부 파일 | Base64 인코딩된 엑셀 파일 |
+## 요약
+`pptxgenjs` 라이브러리를 사용하여 **10페이지 PowerPoint 프레젠테이션**을 자동 생성하는 기능을 구현합니다. 대시보드에 "PPT 다운로드" 버튼을 추가하여 클릭 시 .pptx 파일이 다운로드됩니다.
 
 ---
 
-## 수정된 파일
+## PPT 구성 (10페이지)
 
-1. `src/components/dashboard/EmailSend.tsx`
-   - 필터된 데이터를 `drugs` 배열로 변환하여 API 요청에 포함
-   - 미리보기에 "엑셀 첨부" 표시 추가
-
-2. `supabase/functions/send-email/index.ts`
-   - `npm:exceljs` import
-   - `generateExcelBuffer()` 함수 구현 (5개 시트)
-   - Resend `attachments` 옵션 추가
-
----
-
-## 엑셀 구조 (기존과 동일)
-
-| 시트 | 내용 |
-|---|---|
-| 요약 | 기간, 통계, 약물 목록, 색상 범례 |
-| 국문 상세 | 한글 상세 정보 |
-| English Details | 영문 상세 정보 |
-| 최초승인 (ORIG-1) | 최초승인만 필터 |
-| 변경승인 (SUPPL) | 변경승인만 필터 |
+| 페이지 | 제목 | 내용 |
+|--------|------|------|
+| 1 | 표지 | 프로젝트명, 부제, 날짜 |
+| 2 | 프로젝트 개요 | 목적, 대상 데이터, 주요 기능 요약 |
+| 3 | 기술 스택 | React, TypeScript, Tailwind, Recharts, ExcelJS, Lovable Cloud |
+| 4 | 시스템 아키텍처 | 데이터 계층 구조 (소스코드 + 클라우드 병합), Edge Functions |
+| 5 | 핵심 기능 1 - 데이터 시각화 | 통계 카드, 치료영역 차트, 하이라이트 + 대시보드 스크린샷 |
+| 6 | 핵심 기능 2 - 필터링 & 검색 | 8가지 필터, 통합 검색, 기간 설정 |
+| 7 | 핵심 기능 3 - 데이터 관리 | 엑셀 업로드/다운로드, FDA 검증, 클라우드 저장, 이메일 발송 |
+| 8 | 워크플로우 | 일반 사용 흐름, 데이터 업데이트 흐름, 이메일 발송 흐름 |
+| 9 | 특장점 | 클라우드 병합, 다국어 지원, 관리자 모드, 자동 검증 등 |
+| 10 | 향후 개선사항 | AI 자동 분류, 실시간 FDA 연동, 사용자 권한 관리, 모바일 최적화 등 |
 
 ---
 
-## 이메일 발송 흐름
+## 스크린샷 포함 방식
 
+실제 대시보드 스크린샷을 캡처하여 프로젝트 `public/` 폴더에 이미지로 저장한 뒤, PPT 생성 시 해당 이미지를 슬라이드에 삽입합니다.
+
+캡처할 화면:
+- 대시보드 메인 화면 (통계 카드 + 차트)
+- 필터 영역
+- 데이터 테이블
+- 관리자 패널
+
+---
+
+## 수정/생성 파일
+
+### 1. 새 파일: `src/components/dashboard/PresentationExport.tsx`
+- "PPT 다운로드" 버튼 컴포넌트
+- `pptxgenjs`를 사용하여 10페이지 슬라이드 생성
+- 각 슬라이드에 텍스트, 도형, 이미지 배치
+- 클릭 시 .pptx 파일 다운로드
+
+### 2. `src/components/dashboard/Header.tsx`
+- PresentationExport 컴포넌트를 헤더 영역에 추가 (일반 사용자 영역, 엑셀 다운로드 옆)
+
+### 3. 스크린샷 이미지 파일들
+- `public/screenshots/dashboard-main.png`
+- `public/screenshots/dashboard-filters.png`
+- `public/screenshots/dashboard-table.png`
+- `public/screenshots/admin-panel.png`
+
+---
+
+## 기술적 세부사항
+
+### 의존성 추가
 ```
-사용자 이메일 발송 버튼 클릭
-        ↓
-EmailSend에서 데이터 수집 (stats, dateRangeText, drugs)
-        ↓
-Edge Function 호출 (send-email)
-        ↓
-Edge Function 내에서:
-  a) ExcelJS로 5개 시트 엑셀 생성
-  b) Buffer → Base64 인코딩
-  c) HTML 이메일 본문 생성
-  d) Resend API로 이메일 + 첨부파일 발송
-        ↓
-수신자 이메일 도착 (본문 + 엑셀 첨부)
+pptxgenjs (npm install pptxgenjs)
 ```
+
+### PPT 생성 코드 구조
+
+```typescript
+import pptxgen from "pptxgenjs";
+
+function generatePresentation() {
+  const pres = new pptxgen();
+  pres.layout = "LAYOUT_16x9";
+  
+  // 슬라이드 1: 표지
+  const slide1 = pres.addSlide();
+  slide1.addText("US FDA 승인 전문의약품 대시보드", { ... });
+  
+  // 슬라이드 2~10: 각 섹션별 내용
+  // ...
+  
+  // 스크린샷 이미지 삽입
+  slide.addImage({ path: "/screenshots/dashboard-main.png", ... });
+  
+  pres.writeFile({ fileName: "FDA-Dashboard-소개.pptx" });
+}
+```
+
+### 디자인 가이드
+- 배경: 흰색 + 파란색 그라디언트 헤더
+- 타이틀 폰트: 28pt Bold
+- 본문 폰트: 14pt
+- 포인트 컬러: #4338CA (인디고), #059669 (에메랄드)
+- 각 슬라이드 하단에 페이지 번호 표시
+
+---
+
+## 구현 순서
+
+1. 대시보드 스크린샷 캡처 → `public/screenshots/`에 저장
+2. `pptxgenjs` 패키지 설치
+3. `PresentationExport.tsx` 컴포넌트 생성 (10페이지 PPT 생성 로직)
+4. `Header.tsx`에 PPT 다운로드 버튼 추가
+5. 테스트 (다운로드 및 PowerPoint에서 열기 확인)
+
