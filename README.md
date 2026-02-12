@@ -5,6 +5,8 @@
 ## 📋 문서
 
 - **[기술 문서 (DASHBOARD_IMPLEMENTATION.md)](docs/DASHBOARD_IMPLEMENTATION.md)** - 데이터 아키텍처, 워크플로우, 개발 가이드
+- **[시스템 개요 (SYSTEM_OVERVIEW.md)](docs/SYSTEM_OVERVIEW.md)** - 데이터 구조, 필터링, 기술 스택 상세
+- **[데이터 업데이트 워크플로우 (DATA_UPDATE_WORKFLOW.md)](docs/DATA_UPDATE_WORKFLOW.md)** - 엑셀 추가부터 배포까지 단계별 명령어
 
 ---
 
