@@ -109,7 +109,7 @@ export function Header({ onDataUpdate, data, filteredData, filters, saveToCloud,
             
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Calendar className="h-4 w-4" />
-              <span>수집일: <strong className="text-foreground">2026-01-29</strong></span>
+              <span>수집일: <strong className="text-foreground">2026-02-12</strong></span>
             </div>
             
             <div className="flex items-center gap-1.5 text-muted-foreground">
