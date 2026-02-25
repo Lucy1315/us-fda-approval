@@ -37,6 +37,7 @@ interface EmailRequest {
     novelNonOncology: number;
     orphanDrug: number;
     biosimilar: number;
+    blaCount: number;
     origCount: number;
     supplCount: number;
   };
@@ -567,11 +568,11 @@ function generateEmailHtml(data: EmailRequest): string {
     <div style="padding: 16px 24px; background: #eff6ff; border-bottom: 1px solid #bfdbfe;">
       <div style="display: flex; align-items: center; gap: 8px;">
         <span style="font-size: 16px;">📅</span>
-        <span style="font-size: 14px; color: #1e40af; font-weight: 600;">승인일: ${dateRangeText}</span>
+        <span style="font-size: 14px; color: #1e40af; font-weight: 600;">데이터 수집일: ${dateRangeText}</span>
       </div>
     </div>
     
-    <!-- Summary Stats - 2x2 Grid -->
+    <!-- Summary Stats - 3x2 Grid -->
     <div style="padding: 24px; background: #f8fafc; border-bottom: 1px solid #e5e7eb;">
       <h2 style="margin: 0 0 16px 0; font-size: 16px; color: #374151;">📊 요약 통계</h2>
       
@@ -596,7 +597,7 @@ function generateEmailHtml(data: EmailRequest): string {
       </table>
       
       <!-- Row 2 -->
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;">
         <tr>
           <td width="50%" style="padding-right: 6px;">
             <div style="background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
@@ -610,6 +611,26 @@ function generateEmailHtml(data: EmailRequest): string {
               <div style="font-size: 32px; font-weight: bold; color: #7c3aed;">${stats.orphanDrug}</div>
               <div style="font-size: 13px; color: #374151; font-weight: 500; margin-top: 4px;">희귀의약품</div>
               <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">Orphan Drug</div>
+            </div>
+          </td>
+        </tr>
+      </table>
+      
+      <!-- Row 3 -->
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td width="50%" style="padding-right: 6px;">
+            <div style="background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
+              <div style="font-size: 32px; font-weight: bold; color: #059669;">${stats.biosimilar}</div>
+              <div style="font-size: 13px; color: #374151; font-weight: 500; margin-top: 4px;">바이오시밀러</div>
+              <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">Biosimilar</div>
+            </div>
+          </td>
+          <td width="50%" style="padding-left: 6px;">
+            <div style="background: white; padding: 16px; border-radius: 8px; text-align: center; border: 1px solid #e5e7eb;">
+              <div style="font-size: 32px; font-weight: bold; color: #0891b2;">${stats.blaCount || 0}</div>
+              <div style="font-size: 13px; color: #374151; font-weight: 500; margin-top: 4px;">BLA</div>
+              <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">생물학적 제제</div>
             </div>
           </td>
         </tr>
