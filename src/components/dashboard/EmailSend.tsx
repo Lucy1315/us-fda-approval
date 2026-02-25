@@ -71,6 +71,7 @@ export function EmailSend({ filteredData, filters }: EmailSendProps) {
     novelNonOncology: filteredData.filter((d) => d.isNovelDrug && !d.isOncology).length,
     orphanDrug: filteredData.filter((d) => d.isOrphanDrug).length,
     biosimilar: filteredData.filter((d) => d.isBiosimilar).length,
+    blaCount: filteredData.filter((d) => d.applicationType === "BLA").length,
     origCount: filteredData.filter((d) => !d.supplementCategory?.includes("SUPPL")).length,
     supplCount: filteredData.filter((d) => d.supplementCategory?.includes("SUPPL")).length,
   };
@@ -190,6 +191,14 @@ export function EmailSend({ filteredData, filters }: EmailSendProps) {
                 <div className="p-2 bg-background rounded border">
                   <p className="font-medium">희귀의약품: <strong>{stats.orphanDrug}건</strong></p>
                   <p className="text-muted-foreground">Orphan Drug</p>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <p className="font-medium">바이오시밀러: <strong>{stats.biosimilar}건</strong></p>
+                  <p className="text-muted-foreground">Biosimilar</p>
+                </div>
+                <div className="p-2 bg-background rounded border">
+                  <p className="font-medium">BLA: <strong>{stats.blaCount}건</strong></p>
+                  <p className="text-muted-foreground">생물학적 제제</p>
                 </div>
               </div>
               <div className="pt-2 border-t">
