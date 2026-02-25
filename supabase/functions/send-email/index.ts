@@ -714,6 +714,21 @@ const handler = async (req: Request): Promise<Response> => {
       attachments,
     });
 
+    // Check for Resend API errors (e.g., trial mode restrictions)
+    if (emailResponse.error) {
+      console.error("Resend API error:", emailResponse.error);
+      const errorMsg = emailResponse.error.message || "이메일 발송에 실패했습니다.";
+      
+      // Provide user-friendly message for trial mode restriction
+      if (errorMsg.includes("only send testing emails") || errorMsg.includes("verify a domain")) {
+        throw new Error(
+          "Resend 트라이얼 모드에서는 계정 소유자 이메일로만 발송 가능합니다. " +
+          "외부 도메인(samyang.com 등)으로 발송하려면 resend.com/domains에서 도메인 인증이 필요합니다."
+        );
+      }
+      throw new Error(errorMsg);
+    }
+
     console.log("Email sent successfully:", emailResponse);
 
     return new Response(JSON.stringify(emailResponse), {
