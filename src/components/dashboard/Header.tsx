@@ -23,9 +23,10 @@ interface HeaderProps {
   saveToCloud: (data: DrugApproval[], notes?: string) => Promise<boolean>;
   isFromCloud: boolean;
   cloudVersion: number | null;
+  cloudUpdatedAt: string | null;
 }
 
-export function Header({ onDataUpdate, data, filteredData, filters, saveToCloud, isFromCloud, cloudVersion }: HeaderProps) {
+export function Header({ onDataUpdate, data, filteredData, filters, saveToCloud, isFromCloud, cloudVersion, cloudUpdatedAt }: HeaderProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
@@ -109,7 +110,7 @@ export function Header({ onDataUpdate, data, filteredData, filters, saveToCloud,
             
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Calendar className="h-4 w-4" />
-              <span>수집일: <strong className="text-foreground">2026-02-12</strong></span>
+              <span>수집일: <strong className="text-foreground">{cloudUpdatedAt ? format(new Date(cloudUpdatedAt), "yyyy-MM-dd") : "—"}</strong></span>
             </div>
             
             <div className="flex items-center gap-1.5 text-muted-foreground">
