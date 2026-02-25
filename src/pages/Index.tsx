@@ -20,7 +20,7 @@ function deduplicateData(items: DrugApproval[]): DrugApproval[] {
 }
 
 const Index = () => {
-  const { data, isLoading, updateData, saveToCloud, isFromCloud, cloudVersion } = useCloudData();
+  const { data, isLoading, updateData, saveToCloud, isFromCloud, cloudVersion, cloudUpdatedAt } = useCloudData();
 
   const [filters, setFilters] = useState<FilterState>({
     dateRange: "all",
@@ -103,6 +103,7 @@ const Index = () => {
           saveToCloud={saveToCloud}
           isFromCloud={isFromCloud}
           cloudVersion={cloudVersion}
+          cloudUpdatedAt={cloudUpdatedAt}
         />
         
         {/* Filters */}
