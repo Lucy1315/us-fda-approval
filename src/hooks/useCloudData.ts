@@ -22,7 +22,7 @@ const createDataFingerprint = (data: DrugApproval[]): string => {
 function deduplicateData(items: DrugApproval[]): DrugApproval[] {
   const seen = new Set<string>();
   return items.filter((drug) => {
-    const key = `${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`;
+    const key = `${drug.applicationNo}-${drug.approvalDate}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
