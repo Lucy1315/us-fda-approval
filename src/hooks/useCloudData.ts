@@ -22,7 +22,7 @@ const createDataFingerprint = (data: DrugApproval[]): string => {
 function deduplicateData(items: DrugApproval[]): DrugApproval[] {
   const seen = new Set<string>();
   return items.filter((drug) => {
-    const key = `${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`;
+    const key = `${drug.applicationNo}-${drug.approvalDate}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -148,7 +148,7 @@ export function useCloudData() {
 // Merge source data (fdaData.ts) with cloud data.
 // Default: prefer cloud, but allow source to override clearly broken FDA links.
 function mergeSourceWithCloud(source: DrugApproval[], cloud: DrugApproval[]): DrugApproval[] {
-  const keyOf = (drug: DrugApproval) => `${drug.applicationNo}-${drug.approvalDate}-${drug.supplementCategory || ""}`;
+  const keyOf = (drug: DrugApproval) => `${drug.applicationNo}-${drug.approvalDate}`;
 
   const sourceByKey = new Map<string, DrugApproval>();
   for (const s of source) sourceByKey.set(keyOf(s), s);
