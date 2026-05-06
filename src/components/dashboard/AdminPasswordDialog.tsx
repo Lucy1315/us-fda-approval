@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Lock } from "lucide-react";
+import { Lock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AdminPasswordDialogProps {
   open: boolean;
@@ -12,74 +13,109 @@ interface AdminPasswordDialogProps {
   onSuccess: () => void;
 }
 
-const ADMIN_PASSWORD = "fda2025";
+type Mode = "signin" | "signup";
 
 export function AdminPasswordDialog({ open, onOpenChange, onSuccess }: AdminPasswordDialogProps) {
+  const { signIn, signUp, bootstrapAdmin } = useAuth();
+  const [mode, setMode] = useState<Mode>("signin");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (password === ADMIN_PASSWORD) {
-      setPassword("");
-      setError(false);
-      onOpenChange(false);
-      onSuccess();
-      toast.success("관리자 모드가 활성화되었습니다.");
-    } else {
-      setError(true);
-      toast.error("비밀번호가 올바르지 않습니다.");
-    }
+  const reset = () => {
+    setEmail("");
+    setPassword("");
+    setLoading(false);
   };
 
   const handleClose = () => {
-    setPassword("");
-    setError(false);
+    reset();
     onOpenChange(false);
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error("이메일과 비밀번호를 입력하세요.");
+      return;
+    }
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const res = await signUp(email, password);
+        if (!res.success) return;
+        // Try to claim first-admin role; will fail silently if not allowed
+        await bootstrapAdmin();
+        toast.info("회원가입 후 로그인하세요.");
+        setMode("signin");
+        return;
+      }
+      const res = await signIn(email, password);
+      if (!res.success) return;
+      // Attempt bootstrap admin in case no admin exists yet (RLS will reject otherwise)
+      await bootstrapAdmin();
+      toast.success("관리자 인증 완료");
+      reset();
+      onOpenChange(false);
+      onSuccess();
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[360px]">
+    <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(true) : handleClose())}>
+      <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Lock className="h-5 w-5" />
             관리자 인증
           </DialogTitle>
           <DialogDescription>
-            관리자 기능을 사용하려면 비밀번호를 입력하세요.
+            관리자 계정으로 로그인하세요. 관리자 권한이 있는 계정만 데이터 변경이 가능합니다.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-3 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="admin-email">이메일</Label>
+              <Input
+                id="admin-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@example.com"
+                autoComplete="email"
+                autoFocus
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="admin-password">비밀번호</Label>
               <Input
                 id="admin-password"
                 type="password"
                 value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setError(false);
-                }}
-                placeholder="비밀번호 입력"
-                className={error ? "border-destructive" : ""}
-                autoFocus
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete={mode === "signin" ? "current-password" : "new-password"}
               />
-              {error && (
-                <p className="text-sm text-destructive">비밀번호가 올바르지 않습니다.</p>
-              )}
             </div>
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-foreground text-left"
+              onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+            >
+              {mode === "signin" ? "계정이 없으신가요? 회원가입" : "이미 계정이 있으신가요? 로그인"}
+            </button>
           </div>
-          
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
               취소
             </Button>
-            <Button type="submit">
-              확인
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === "signin" ? "로그인" : "회원가입"}
             </Button>
           </DialogFooter>
         </form>
