@@ -12,6 +12,7 @@ import { AdminPasswordDialog } from "./AdminPasswordDialog";
 import { DrugApproval } from "@/data/fdaData";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 import { FilterState } from "./Filters";
 
@@ -29,8 +30,9 @@ interface HeaderProps {
 export function Header({ onDataUpdate, data, filteredData, filters, saveToCloud, isFromCloud, cloudVersion, cloudUpdatedAt }: HeaderProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const { isAdmin, signOut, user } = useAuth();
+  const isAdminAuthenticated = isAdmin;
 
   const handleConfirm = async () => {
     if (data.length === 0) {
@@ -65,14 +67,12 @@ export function Header({ onDataUpdate, data, filteredData, filters, saveToCloud,
   };
 
   const handleAdminSuccess = () => {
-    setIsAdminAuthenticated(true);
     setIsAdminOpen(true);
   };
 
-  const handleAdminLogout = () => {
-    setIsAdminAuthenticated(false);
+  const handleAdminLogout = async () => {
     setIsAdminOpen(false);
-    toast.info("관리자 모드가 해제되었습니다.");
+    await signOut();
   };
 
   return (
