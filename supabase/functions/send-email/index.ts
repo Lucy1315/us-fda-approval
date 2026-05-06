@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import ExcelJS from "npm:exceljs@4.4.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -671,6 +672,42 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Require authenticated admin user
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authHeader = req.headers.get("authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+    const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: roleData } = await serviceClient
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", userData.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!roleData) {
+      return new Response(JSON.stringify({ error: "Forbidden: admin only" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const apiKey = Deno.env.get("RESEND_API_KEY");
     if (!apiKey) {
       throw new Error("RESEND_API_KEY is not configured. Please add it in Lovable Cloud secrets.");
@@ -681,6 +718,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!data.to || !data.subject) {
       throw new Error("Missing required fields: to, subject");
+    }
+    // Basic input validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (typeof data.to !== "string" || !emailRegex.test(data.to) || data.to.length > 254) {
+      throw new Error("Invalid 'to' email address");
+    }
+    if (typeof data.subject !== "string" || data.subject.length > 300) {
+      throw new Error("Invalid subject");
+    }
+    if (data.drugs && (!Array.isArray(data.drugs) || data.drugs.length > 5000)) {
+      throw new Error("Too many drugs in payload");
     }
 
     const html = generateEmailHtml(data);
